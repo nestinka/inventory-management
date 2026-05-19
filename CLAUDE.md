@@ -1,0 +1,56 @@
+# CLAUDE.md — Inventory Management System
+
+## Commands
+
+```bash
+pnpm dev               # start dev server on :7000
+pnpm test:unit         # vitest unit tests
+pnpm test:integration  # vitest integration tests (needs Postgres)
+pnpm test:component    # vitest component tests
+pnpm test:e2e          # playwright e2e
+pnpm typecheck         # tsc --noEmit
+pnpm lint              # eslint
+pnpm db:migrate        # prisma migrate dev
+pnpm db:seed           # seed (idempotent)
+```
+
+## Architecture rules (non-negotiable)
+
+1. **Barrel imports only.** Outside `src/server/modules/<name>/`, always import from `@/server/modules/<name>` — never from `*/repo`, `*/service`, `*/domain`, etc. The ESLint rule enforces this.
+2. **No direct `current_stock` writes.** Stock mutations go through `stockService.adjust()` only. Never write to `items.current_stock` directly.
+3. **Audit writes are synchronous and transactional.** Call `writeAudit(tx, ...)` inside `prisma.$transaction`. No audit = no business write.
+4. **Append-only history.** Never `update` or `delete` rows from `audit_logs`, `stock_adjustments`, or `request_status_events`.
+5. **RBAC at two layers.** Route guards (`requireRole`) AND service guards. Never skip either.
+6. **Zod validates all API input.** Pass bodies through the module's `*Dto` schema before touching any service.
+
+## Module structure
+
+Each module under `src/server/modules/<name>/` has:
+- `domain.ts` — pure types and value objects
+- `dto.ts` — zod schemas for I/O
+- `repo.ts` — Prisma access (DB writes only here)
+- `service.ts` — business logic, events, audit
+- `index.ts` — public barrel (only this is importable by API routes)
+
+## Testing expectations
+
+- Every new service method → unit test for happy path + at least one error path.
+- Every new API route → integration test for happy path + RBAC rejection.
+- Every new audit action → row in `tests/unit/audit-coverage.spec.ts` (file to be created in T6).
+
+## Seed credentials (dev)
+
+```
+admin@inventory.local  / Admin1234!   (ADMIN)
+editor@inventory.local / Editor1234!  (EDITOR)
+viewer@inventory.local / Viewer1234!  (VIEWER)
+```
+
+## Env
+
+Copy `.env.example` to `.env`. Defaults work with `docker compose up -d postgres mailhog`.
+
+## Task backlog
+
+See `docs/13-agent-tasks.md` for the full AI-agent task queue.
+Current phase: **Phase 0 done → Phase 1 next** (T1.1 – T1.5).

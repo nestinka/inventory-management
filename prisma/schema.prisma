@@ -1,0 +1,273 @@
+// Prisma schema for Inventory Management System
+// Docs: docs/03-database-design.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ItemStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
+
+enum AdjustmentReason {
+  DAMAGE
+  EXPIRY
+  AUDIT_CORRECTION
+  CONSUMPTION
+  MANUAL_OVERRIDE
+  RECEIVED
+  FULFILMENT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FULFILLED
+  CANCELLED
+}
+
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ─── Core tables ─────────────────────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email            String    @unique
+  name             String
+  passwordHash     String    @map("password_hash")
+  role             UserRole  @default(VIEWER)
+  isActive         Boolean   @default(true) @map("is_active")
+  lastLoginAt      DateTime? @map("last_login_at")
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil      DateTime? @map("locked_until")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  deletedAt        DateTime? @map("deleted_at")
+
+  stockAdjustments   StockAdjustment[]
+  requestsCreated    Request[]             @relation("requester")
+  requestsApproved   Request[]             @relation("approver")
+  requestStatusEvents RequestStatusEvent[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  itemsCreated       Item[]
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Category {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String         @unique
+  description String?
+  status      CategoryStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  items Item[]
+
+  @@index([status])
+  @@map("categories")
+}
+
+model Item {
+  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  description      String?
+  unitOfMeasure    String     @map("unit_of_measure")
+  categoryId       String     @map("category_id") @db.Uuid
+  currentStock     Float      @default(0) @map("current_stock")
+  reorderThreshold Int        @default(0) @map("reorder_threshold")
+  expiryDate       DateTime?  @map("expiry_date") @db.Date
+  status           ItemStatus @default(ACTIVE)
+  createdById      String     @map("created_by_id") @db.Uuid
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+  deletedAt        DateTime?  @map("deleted_at")
+
+  category         Category          @relation(fields: [categoryId], references: [id])
+  createdBy        User              @relation(fields: [createdById], references: [id])
+  stockAdjustments StockAdjustment[]
+  requestLines     RequestLine[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([expiryDate])
+  @@index([deletedAt])
+  @@map("items")
+}
+
+// ─── Stock adjustments ───────────────────────────────────────────────────────
+
+model StockAdjustment {
+  id           String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  itemId       String           @map("item_id") @db.Uuid
+  delta        Float
+  balanceAfter Float            @map("balance_after")
+  reason       AdjustmentReason
+  note         String?
+  actorId      String           @map("actor_id") @db.Uuid
+  requestId    String?          @map("request_id") @db.Uuid
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  item    Item     @relation(fields: [itemId], references: [id])
+  actor   User     @relation(fields: [actorId], references: [id])
+  request Request? @relation(fields: [requestId], references: [id])
+
+  @@index([itemId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@map("stock_adjustments")
+}
+
+// ─── Requests & approval workflow ────────────────────────────────────────────
+
+model Request {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requesterId  String        @map("requester_id") @db.Uuid
+  status       RequestStatus @default(PENDING)
+  reason       String
+  approverId   String?       @map("approver_id") @db.Uuid
+  approvedAt   DateTime?     @map("approved_at")
+  fulfilledAt  DateTime?     @map("fulfilled_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  requester        User                 @relation("requester", fields: [requesterId], references: [id])
+  approver         User?                @relation("approver", fields: [approverId], references: [id])
+  lines            RequestLine[]
+  statusEvents     RequestStatusEvent[]
+  stockAdjustments StockAdjustment[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([requesterId])
+  @@map("requests")
+}
+
+model RequestLine {
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId    String  @map("request_id") @db.Uuid
+  itemId       String  @map("item_id") @db.Uuid
+  requestedQty Int     @map("requested_qty")
+  approvedQty  Int?    @map("approved_qty")
+  fulfilledQty Int     @default(0) @map("fulfilled_qty")
+
+  request Request @relation(fields: [requestId], references: [id])
+  item    Item    @relation(fields: [itemId], references: [id])
+
+  @@index([requestId])
+  @@index([itemId])
+  @@map("request_lines")
+}
+
+model RequestStatusEvent {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requestId  String        @map("request_id") @db.Uuid
+  fromStatus RequestStatus? @map("from_status")
+  toStatus   RequestStatus  @map("to_status")
+  actorId    String        @map("actor_id") @db.Uuid
+  note       String?
+  createdAt  DateTime      @default(now()) @map("created_at")
+
+  request Request @relation(fields: [requestId], references: [id])
+  actor   User    @relation(fields: [actorId], references: [id])
+
+  @@index([requestId, createdAt(sort: Desc)])
+  @@map("request_status_events")
+}
+
+// ─── Audit log (append-only) ─────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId    String?  @map("actor_id") @db.Uuid
+  action     String
+  targetType String   @map("target_type")
+  targetId   String?  @map("target_id")
+  diff       Json?
+  ip         String?
+  userAgent  String?  @map("user_agent")
+  requestId  String?  @map("request_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([targetType, targetId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// ─── Event outbox (transactional async dispatch) ─────────────────────────────
+
+model EventOutbox {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  topic        String
+  payload      Json
+  createdAt    DateTime  @default(now()) @map("created_at")
+  dispatchedAt DateTime? @map("dispatched_at")
+  attempts     Int       @default(0)
+  lastError    String?   @map("last_error")
+  nextAttemptAt DateTime? @map("next_attempt_at")
+
+  @@index([dispatchedAt, nextAttemptAt])
+  @@map("event_outbox")
+}
+
+// ─── Notifications (in-app inbox) ────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  topic     String
+  payload   Json
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ─── Notification dedup (suppress repeat scanner alerts within 24 h) ─────────
+
+model NotificationDedup {
+  key       String   @id
+  emittedAt DateTime @map("emitted_at")
+
+  @@map("notification_dedup")
+}
+
+// ─── Idempotency keys ────────────────────────────────────────────────────────
+
+model IdempotencyKey {
+  key        String   @id
+  statusCode Int      @map("status_code")
+  body       Json
+  createdAt  DateTime @default(now()) @map("created_at")
+  expiresAt  DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
