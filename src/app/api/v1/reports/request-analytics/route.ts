@@ -5,6 +5,7 @@ import { RequestAnalyticsDto, requestAnalytics } from '@/server/modules/reports'
 
 export async function GET(req: NextRequest) {
   return withRoute({
+    role: ['ADMIN', 'EDITOR'],
     handler: async () => {
       const input = RequestAnalyticsDto.parse(Object.fromEntries(req.nextUrl.searchParams));
       const data = await requestAnalytics(input);

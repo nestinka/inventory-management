@@ -5,6 +5,7 @@ import { ConsumptionReportDto, consumptionReport, toCsv } from '@/server/modules
 
 export async function GET(req: NextRequest) {
   return withRoute({
+    role: ['ADMIN', 'EDITOR'],
     handler: async () => {
       const input = ConsumptionReportDto.parse(Object.fromEntries(req.nextUrl.searchParams));
       const data = await consumptionReport(input);

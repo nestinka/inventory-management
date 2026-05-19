@@ -5,6 +5,30 @@ import type { Prisma } from '@prisma/client';
 import { formatDateTime } from '@/lib/utils';
 import { AuditDiffModal } from './audit-diff-modal';
 
+const ACTION_DESCRIPTIONS: Record<string, string> = {
+  'item.create':           'Item created',
+  'item.update':           'Item updated',
+  'item.delete':           'Item deleted',
+  'stock.adjust':          'Stock adjusted',
+  'category.create':       'Category created',
+  'category.update':       'Category updated',
+  'category.activate':     'Category activated',
+  'category.deactivate':   'Category deactivated',
+  'request.create':        'Request submitted',
+  'request.approve':       'Request approved',
+  'request.reject':        'Request rejected',
+  'request.cancel':        'Request cancelled',
+  'request.fulfil':        'Request fulfilled',
+  'user.create':           'User created',
+  'user.update':           'User updated',
+  'user.delete':           'User deleted',
+  'user.password_reset':   'Password reset',
+};
+
+function describeAction(action: string): string {
+  return ACTION_DESCRIPTIONS[action] ?? action;
+}
+
 interface AuditLogWithActor {
   id: string;
   actorId: string | null;
@@ -42,7 +66,7 @@ export function AuditTable({ logs }: AuditTableProps) {
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Time</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actor</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">Action</th>
-                <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground lg:table-cell">Target</th>
+                <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground md:table-cell">Description</th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground w-8" aria-label="Diff" />
               </tr>
             </thead>
@@ -74,9 +98,12 @@ export function AuditTable({ logs }: AuditTableProps) {
                         {log.action}
                       </span>
                     </td>
-                    <td className="hidden px-4 py-3 font-mono text-xs text-muted-foreground lg:table-cell">
-                      {log.targetType}
-                      {log.targetId ? `:${log.targetId.slice(0, 8)}` : ''}
+                    <td className="hidden px-4 py-3 md:table-cell">
+                      <p className="text-sm text-foreground">{describeAction(log.action)}</p>
+                      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
+                        {log.targetType}
+                        {log.targetId ? ` · ${log.targetId.slice(0, 8)}` : ''}
+                      </p>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {hasDiff && (

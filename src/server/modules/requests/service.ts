@@ -35,10 +35,11 @@ function assertTransition(from: RequestStatus, to: RequestStatus) {
 }
 
 export async function listRequests(input: ListRequestsInput, actor: Actor) {
+  const selfOnly = actor.role === 'EDITOR' || actor.role === 'VIEWER';
   const where = {
     ...(input.status && { status: input.status }),
-    ...(actor.role === 'EDITOR' && { requesterId: actor.id }),
-    ...(input.requesterId && actor.role !== 'EDITOR' && { requesterId: input.requesterId }),
+    ...(selfOnly && { requesterId: actor.id }),
+    ...(input.requesterId && !selfOnly && { requesterId: input.requesterId }),
     ...(input.from && { createdAt: { gte: new Date(input.from) } }),
     ...(input.to && { createdAt: { lte: new Date(input.to) } }),
   };
@@ -58,7 +59,7 @@ export async function listRequests(input: ListRequestsInput, actor: Actor) {
 
 export async function getRequest(id: string, actor: Actor) {
   const req = await getOrFail(id);
-  if (actor.role === 'EDITOR') requireOwnerOrAdmin(req.requesterId, actor);
+  if (actor.role === 'EDITOR' || actor.role === 'VIEWER') requireOwnerOrAdmin(req.requesterId, actor);
   return req;
 }
 
@@ -158,7 +159,7 @@ export async function rejectRequest(id: string, input: RejectRequestInput, actor
 
 export async function cancelRequest(id: string, actor: Actor, ctx?: AuditContext) {
   const req = await getOrFail(id);
-  if (actor.role === 'EDITOR') requireOwnerOrAdmin(req.requesterId, actor);
+  if (actor.role === 'EDITOR' || actor.role === 'VIEWER') requireOwnerOrAdmin(req.requesterId, actor);
   assertTransition(req.status, RequestStatus.CANCELLED);
 
   return prisma.$transaction(async (tx) => {

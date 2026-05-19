@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 }
 
 export const POST = withRoute({
-  role: 'ADMIN',
+  role: ['ADMIN', 'EDITOR'],
   body: CreateItemDto,
   handler: async ({ actor }, body) => {
     const item = await createItem(body as CreateItemInput, actor);

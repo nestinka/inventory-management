@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'New Request' };
 export default async function NewRequestPage() {
   const session = await auth();
   const actor = session?.user as Actor | undefined;
-  if (!actor || actor.role === 'VIEWER') redirect('/requests');
+  if (!actor) redirect('/login');
 
   return (
     <div className="space-y-6">

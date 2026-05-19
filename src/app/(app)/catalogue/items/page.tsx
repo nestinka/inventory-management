@@ -76,7 +76,7 @@ export default async function CatalogueItemsPage({
 }) {
   const session = await auth();
   const actor = session?.user as Actor | undefined;
-  if (!actor || actor.role !== 'ADMIN') redirect('/');
+  if (!actor || (actor.role !== 'ADMIN' && actor.role !== 'EDITOR')) redirect('/');
 
   const sp = await searchParams;
 
@@ -174,15 +174,19 @@ export default async function CatalogueItemsPage({
                       >
                         <SlidersHorizontal className="h-3.5 w-3.5" />
                       </Link>
-                      <Link
-                        href={`/catalogue/items/${item.id}/edit`}
-                        title="Edit item"
-                        aria-label={`Edit ${item.name}`}
-                        className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Link>
-                      <DeleteItemButton itemId={item.id} itemName={item.name} />
+                      {actor.role === 'ADMIN' && (
+                        <>
+                          <Link
+                            href={`/catalogue/items/${item.id}/edit`}
+                            title="Edit item"
+                            aria-label={`Edit ${item.name}`}
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Link>
+                          <DeleteItemButton itemId={item.id} itemName={item.name} />
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

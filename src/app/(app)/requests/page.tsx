@@ -42,7 +42,7 @@ export default async function RequestsPage({
           <h1 className="text-2xl font-semibold text-foreground">Requests</h1>
           <p className="mt-1 text-sm text-muted-foreground">{requests.length} request{requests.length !== 1 ? 's' : ''}</p>
         </div>
-        {(actor.role === 'ADMIN' || actor.role === 'EDITOR') && (
+        {actor && (
           <Link
             href="/requests/new"
             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"

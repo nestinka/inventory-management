@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function AdjustStockPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   const actor = session?.user as Actor | undefined;
-  if (!actor || actor.role !== 'ADMIN') redirect('/');
+  if (!actor || (actor.role !== 'ADMIN' && actor.role !== 'EDITOR')) redirect('/');
 
   const { id } = await params;
   const [item, history] = await Promise.all([

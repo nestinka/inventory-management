@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import type { Actor } from '@/server/auth/rbac';
 import { listAuditLogs, ListAuditLogsDto } from '@/server/modules/audit';
 import { AuditFilters } from '@/components/audit/audit-filters';
 import { AuditTable } from '@/components/audit/audit-table';
@@ -13,6 +16,10 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<Record<string, string>>;
 }) {
+  const session = await auth();
+  const actor = session?.user as Actor | undefined;
+  if (!actor || actor.role === 'VIEWER') redirect('/');
+
   const sp = await searchParams;
 
   const input = ListAuditLogsDto.parse({

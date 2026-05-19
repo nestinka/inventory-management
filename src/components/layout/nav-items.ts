@@ -15,10 +15,10 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Inventory',   href: '/inventory',                 icon: Package },
   { label: 'Quick Update', href: '/inventory/quick-update',   icon: Zap,         roles: ['ADMIN', 'EDITOR'] },
   { label: 'Categories',  href: '/catalogue/categories',      icon: Tag,         roles: ['ADMIN'] },
-  { label: 'Items',       href: '/catalogue/items',           icon: Layers,      roles: ['ADMIN'] },
+  { label: 'Items',       href: '/catalogue/items',           icon: Layers,      roles: ['ADMIN', 'EDITOR'] },
   { label: 'Requests',    href: '/requests',                  icon: FileText },
   { label: 'Notifications', href: '/notifications',            icon: Bell },
-  { label: 'Audit Log',   href: '/audit',                     icon: ClipboardList, roles: ['ADMIN', 'VIEWER'] },
-  { label: 'Reports',     href: '/reports',                   icon: BarChart3 },
+  { label: 'Audit Log',   href: '/audit',                     icon: ClipboardList, roles: ['ADMIN', 'EDITOR'] },
+  { label: 'Reports',     href: '/reports',                   icon: BarChart3,    roles: ['ADMIN', 'EDITOR'] },
   { label: 'Users',       href: '/users',                     icon: Users,       roles: ['ADMIN'] },
 ];

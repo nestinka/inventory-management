@@ -12,6 +12,7 @@ const NearExpiryQueryDto = z.object({
 
 export async function GET(req: NextRequest) {
   return withRoute({
+    role: ['ADMIN', 'EDITOR'],
     handler: async () => {
       const params = NearExpiryQueryDto.parse(Object.fromEntries(req.nextUrl.searchParams));
       const days = params.days ?? env.NEAR_EXPIRY_WINDOW_DAYS;

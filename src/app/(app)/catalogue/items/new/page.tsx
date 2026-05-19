@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'New Item' };
 export default async function NewItemPage() {
   const session = await auth();
   const actor = session?.user as Actor | undefined;
-  if (!actor || actor.role !== 'ADMIN') redirect('/');
+  if (!actor || (actor.role !== 'ADMIN' && actor.role !== 'EDITOR')) redirect('/');
 
   const { data: categories } = await listCategories({ limit: 100 });
 

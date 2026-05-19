@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 }
 
 export const POST = withRoute({
-  role: ['ADMIN', 'EDITOR'],
+  role: ['ADMIN', 'EDITOR', 'VIEWER'],
   body: CreateRequestDto,
   handler: async ({ actor }, body) => {
     const request = await createRequest(body, actor);
