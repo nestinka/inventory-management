@@ -14,6 +14,7 @@ interface Notification {
 
 const topicLabels: Record<string, string> = {
   'item.lowStock':       'Low stock alert',
+  'item.outOfStock':     'Out of stock',
   'item.nearExpiry':     'Near expiry',
   'request.submitted':  'New request',
   'request.approved':   'Request approved',
@@ -23,15 +24,16 @@ const topicLabels: Record<string, string> = {
 
 const topicColors: Record<string, string> = {
   'item.lowStock':       'text-amber-600',
+  'item.outOfStock':     'text-red-600',
   'item.nearExpiry':     'text-orange-600',
   'request.submitted':  'text-blue-600',
   'request.approved':   'text-emerald-600',
   'request.rejected':   'text-rose-600',
-  'request.fulfilled':  'text-blue-700',
+  'request.fulfilled':  'text-teal-600',
 };
 
 function payloadSummary(topic: string, payload: Record<string, unknown>): string {
-  if (topic === 'item.lowStock' || topic === 'item.nearExpiry') {
+  if (topic === 'item.lowStock' || topic === 'item.outOfStock' || topic === 'item.nearExpiry') {
     return String(payload.name ?? payload.itemId ?? '');
   }
   if (topic.startsWith('request.')) {

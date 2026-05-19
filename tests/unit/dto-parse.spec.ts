@@ -10,7 +10,16 @@ describe('AdjustStockDto', () => {
       reason: 'CONSUMPTION',
     });
     expect(result.success).toBe(false);
-    expect(JSON.stringify(result)).toContain('non-zero');
+    expect(JSON.stringify(result)).toContain('at least');
+  });
+
+  it('rejects subnormal delta (5e-324)', () => {
+    const result = AdjustStockDto.safeParse({
+      itemId: '00000000-0000-0000-0000-000000000001',
+      delta: 5e-324,
+      reason: 'CONSUMPTION',
+    });
+    expect(result.success).toBe(false);
   });
 
   it('accepts valid adjustment', () => {
@@ -35,7 +44,6 @@ describe('AdjustStockDto', () => {
 
 describe('CreateItemDto', () => {
   const base = {
-    sku: 'LAP-001',
     name: 'Test Laptop',
     unitOfMeasure: 'pcs',
     categoryId: '00000000-0000-0000-0000-000000000001',

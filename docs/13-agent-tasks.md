@@ -2,6 +2,17 @@
 
 This is the work queue. Each task is self-contained — a coding agent can pick one up cold, given this repo, and produce a PR. Tasks reference the design docs (01–12) for context.
 
+## Status (as of 2026-05-19)
+- Phase 0 ✅ Foundations — Complete
+- Phase 1 ✅ Catalogue — Complete
+- Phase 2 ✅ Inventory & stock adjustments — Complete
+- Phase 3 ✅ Requests & approvals — Complete
+- Phase 4 ✅ Notifications — Complete
+- Phase 5 ✅ Reporting & audit explorer — Complete
+- Phase 6 ✅ Hardening — Complete (T6.4 deferred pending external pen-test)
+
+---
+
 **Conventions for every task**:
 - Write tests alongside the change (see `docs/10-testing-strategy.md`).
 - Update docs if the contract changes.
@@ -51,8 +62,8 @@ This is the work queue. Each task is self-contained — a coding agent can pick 
 - Acceptance: unit tests for service; integration tests for repo against testcontainers.
 
 ### T1.2 — Items module
-- Scope: same shape as categories. Includes `stockState` derivation. SKU is case-insensitive unique (use `citext`).
-- Acceptance: creating duplicate SKU (different case) returns `DUPLICATE_SKU`.
+- Scope: same shape as categories. Includes `stockState` derivation.
+- Acceptance: creating an item with a duplicate name returns `VALIDATION_FAILED`.
 
 ### T1.3 — Categories & items API routes
 - Scope: route handlers under `app/api/v1/categories` and `app/api/v1/items` per [04-api-specifications.md](./04-api-specifications.md). Use a shared `withRoute(handler)` helper to wire session, RBAC, validation, logging, error mapping.

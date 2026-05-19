@@ -79,7 +79,9 @@ export async function update(id: string, input: UpdateItemInput) {
     where: { id },
     data: {
       ...input,
-      expiryDate: input.expiryDate !== undefined ? (input.expiryDate ? new Date(input.expiryDate) : null) : undefined,
+      expiryDate: input.expiryDate !== undefined
+        ? (input.expiryDate ? new Date(input.expiryDate) : null)
+        : undefined,
     },
     include: itemInclude,
   });

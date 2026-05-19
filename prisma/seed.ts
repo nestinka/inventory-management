@@ -9,11 +9,20 @@ async function main() {
   // ── Users ────────────────────────────────────────────────────────────────
   const pw = (plain: string) => bcrypt.hashSync(plain, 12);
 
+  // Fixed UUIDs keep dev session cookies valid across re-seeds.
+  // Never reuse these in production.
+  const SEED_IDS = {
+    admin:  'a0000000-0000-0000-0000-000000000001',
+    editor: 'a0000000-0000-0000-0000-000000000002',
+    viewer: 'a0000000-0000-0000-0000-000000000003',
+  } as const;
+
   const [admin, editor, _viewer] = await Promise.all([
     prisma.user.upsert({
       where: { email: 'admin@inventory.local' },
       update: {},
       create: {
+        id: SEED_IDS.admin,
         email: 'admin@inventory.local',
         name: 'Alice Admin',
         passwordHash: pw('Admin1234!'),
@@ -24,6 +33,7 @@ async function main() {
       where: { email: 'editor@inventory.local' },
       update: {},
       create: {
+        id: SEED_IDS.editor,
         email: 'editor@inventory.local',
         name: 'Bob Editor',
         passwordHash: pw('Editor1234!'),
@@ -34,6 +44,7 @@ async function main() {
       where: { email: 'viewer@inventory.local' },
       update: {},
       create: {
+        id: SEED_IDS.viewer,
         email: 'viewer@inventory.local',
         name: 'Carol Viewer',
         passwordHash: pw('Viewer1234!'),

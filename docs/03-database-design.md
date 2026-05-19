@@ -58,7 +58,6 @@ Indexes: `email`, partial `(role) WHERE deleted_at IS NULL`.
 | col | type | notes |
 |---|---|---|
 | id | `uuid` PK |
-| sku | `citext` UNIQUE |
 | name | `text` |
 | description | `text` |
 | unit_of_measure | `text` (e.g. "pcs", "m", "box") |

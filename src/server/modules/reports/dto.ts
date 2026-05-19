@@ -47,7 +47,7 @@ export const MonthlyUsageDto = z.object({
   from:       z.string().datetime().optional(),
   to:         z.string().datetime().optional(),
   categoryId: z.string().uuid().optional(),
-  q:          z.string().optional(),   // search item name/SKU
+  q:          z.string().optional(),   // search item name
   format:     z.enum(['json', 'csv']).default('json'),
 });
 

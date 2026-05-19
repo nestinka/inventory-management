@@ -22,9 +22,8 @@ Optimised for two operating modes:
 
 ### 3.1 Catalogue
 - CRUD for **Categories** (tree depth = 1 for v1; nesting deferred).
-- CRUD for **Items** with attributes: name, SKU, description, unit of measure (UoM), current stock, reorder threshold, expiry date (nullable, consumables only), status (`ACTIVE | INACTIVE | DISCONTINUED`), category.
+- CRUD for **Items** with attributes: name, description, unit of measure (UoM), current stock, reorder threshold, expiry date (nullable, consumables only), status (`ACTIVE | INACTIVE | DISCONTINUED`), category.
 - Soft delete (no hard delete from UI).
-- SKU is globally unique, case-insensitive.
 
 ### 3.2 Inventory tracking
 - Real-time stock visibility per item with three-tier visual indicator:

@@ -74,7 +74,7 @@ src/
 3. RBAC guard checks role against the route's policy (`requireRole('ADMIN')`).
 4. Body parsed via `CreateItemDto.parse(body)` — invalid → 422.
 5. `itemsService.create(input, actor)` called.
-6. Service runs business invariants (SKU uniqueness, threshold ≥ 0).
+6. Service runs business invariants (threshold ≥ 0, stock ≥ 0).
 7. Service writes through `itemsRepo` (Prisma transaction).
 8. Service emits `item.created` event on the bus.
 9. `AuditSubscriber` writes an `AuditLog` row (same transaction via outbox table, see §5).

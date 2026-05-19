@@ -1,3 +1,4 @@
+import { ItemStatus } from '@prisma/client';
 import { prisma } from '@/server/db/client';
 import { writeAudit } from '@/server/lib/audit';
 import type { Actor } from '@/server/auth/rbac';
@@ -8,9 +9,25 @@ import type { CreateItemInput, UpdateItemInput, ListItemsInput } from './dto';
 export const listItems = repo.findMany;
 export const getItem = repo.findById;
 
+const itemInclude = { category: { select: { id: true, name: true } } };
+
 export async function createItem(input: CreateItemInput, actor: Actor, ctx?: AuditContext) {
-  const item = await prisma.$transaction(async (tx) => {
-    const created = await repo.create(input, actor.id);
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.item.create({
+      data: {
+        name: input.name,
+        description: input.description ?? null,
+        unitOfMeasure: input.unitOfMeasure,
+        categoryId: input.categoryId,
+        currentStock: input.currentStock,
+        reorderThreshold: input.reorderThreshold,
+        expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
+        status: input.status ?? ItemStatus.ACTIVE,
+        createdById: actor.id,
+      },
+      include: itemInclude,
+    });
+
     await writeAudit(tx, {
       actorId: actor.id,
       action: 'item.create',
@@ -19,15 +36,25 @@ export async function createItem(input: CreateItemInput, actor: Actor, ctx?: Aud
       diff: { after: created },
       ctx,
     });
+
     return created;
   });
-  return item;
 }
 
 export async function updateItem(id: string, input: UpdateItemInput, actor: Actor, ctx?: AuditContext) {
   const before = await repo.findById(id);
-  const item = await prisma.$transaction(async (tx) => {
-    const after = await repo.update(id, input);
+  return prisma.$transaction(async (tx) => {
+    const after = await tx.item.update({
+      where: { id },
+      data: {
+        ...input,
+        expiryDate: input.expiryDate !== undefined
+          ? (input.expiryDate ? new Date(input.expiryDate) : null)
+          : undefined,
+      },
+      include: itemInclude,
+    });
+
     await writeAudit(tx, {
       actorId: actor.id,
       action: 'item.update',
@@ -36,15 +63,16 @@ export async function updateItem(id: string, input: UpdateItemInput, actor: Acto
       diff: { before, after },
       ctx,
     });
+
     return after;
   });
-  return item;
 }
 
 export async function deleteItem(id: string, actor: Actor, ctx?: AuditContext) {
   const before = await repo.findById(id);
   await prisma.$transaction(async (tx) => {
-    await repo.softDelete(id);
+    await tx.item.update({ where: { id }, data: { deletedAt: new Date(), status: ItemStatus.DISCONTINUED } });
+
     await writeAudit(tx, {
       actorId: actor.id,
       action: 'item.delete',

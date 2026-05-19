@@ -41,9 +41,9 @@ const STEPS = [0.5, 1, 5, 10] as const;
 type Step = (typeof STEPS)[number];
 
 const BADGE_BG: Record<StockState, string> = {
-  HEALTHY: 'bg-emerald-500',
-  LOW:     'bg-amber-500',
-  OUT:     'bg-rose-500',
+  HEALTHY: 'bg-emerald-700',
+  LOW:     'bg-amber-700',
+  OUT:     'bg-rose-700',
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -127,6 +127,7 @@ export function QuickStockList({ items }: { items: QuickItem[] }) {
           />
           <input
             type="search"
+            aria-label="Search items or categories"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search items or categories…"

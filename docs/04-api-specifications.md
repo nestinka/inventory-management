@@ -16,7 +16,7 @@ All endpoints are Next.js Route Handlers under `src/app/api/**`. The full OpenAP
   - `401` missing/invalid auth
   - `403` insufficient role
   - `404` not found (or soft-deleted)
-  - `409` conflict (duplicate SKU, stale update)
+  - `409` conflict (stale update)
   - `422` zod validation failure (sub-case of 400, distinguished for clients)
   - `429` rate limit
   - `500` unexpected
@@ -80,7 +80,7 @@ Body (POST):
 | GET | `/items/:id/history` | any authenticated |
 
 Query for `GET /items`:
-- `q` — text search across name, sku
+- `q` — text search across name
 - `categoryId`
 - `status` — `ACTIVE | INACTIVE | DISCONTINUED`
 - `stockState` — `HEALTHY | LOW | OUT`
@@ -91,7 +91,6 @@ Response item shape:
 ```json
 {
   "id": "uuid",
-  "sku": "LAP-DELL-001",
   "name": "Dell Latitude 7430",
   "description": "...",
   "unitOfMeasure": "pcs",
@@ -225,7 +224,6 @@ URI versioning (`/api/v1/...`). Breaking changes increment the prefix. Internal 
 | `FORBIDDEN` | 403 | role insufficient |
 | `VALIDATION_FAILED` | 422 | zod parse failed; `details` lists field errors |
 | `NOT_FOUND` | 404 | entity absent or soft-deleted |
-| `DUPLICATE_SKU` | 409 | item SKU already exists |
 | `STOCK_BELOW_ZERO` | 409 | adjustment would push stock < 0 |
 | `STALE_REQUEST` | 409 | optimistic-lock mismatch |
 | `RATE_LIMITED` | 429 | too many requests |

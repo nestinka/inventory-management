@@ -45,7 +45,16 @@ export async function adjust(input: AdjustStockInput, actor: Actor, ctx?: AuditC
       ctx,
     });
 
-    if (newStock < item.reorderThreshold) {
+    // Out-of-stock takes priority; low-stock still fires for non-zero stock below threshold
+    if (newStock === 0) {
+      await eventBus.emit(tx, 'item.outOfStock', {
+        itemId: item.id,
+        name: item.name,
+        currentStock: 0,
+        threshold: item.reorderThreshold,
+      });
+    }
+    if (newStock > 0 && newStock < item.reorderThreshold) {
       await eventBus.emit(tx, 'item.lowStock', {
         itemId: item.id,
         name: item.name,

@@ -5,6 +5,15 @@ import { ApiError } from '@/server/lib/errors';
 
 const make = (role: Actor['role']): Actor => ({ id: 'u1', email: 'a@b.com', name: 'Test', role });
 
+/** Catch the thrown ApiError and return it, or throw if nothing was thrown. */
+function catchApiError(fn: () => void): ApiError {
+  try { fn(); } catch (e) {
+    if (e instanceof ApiError) return e;
+    throw e;
+  }
+  throw new Error('Expected function to throw an ApiError but it did not');
+}
+
 describe('requireRole', () => {
   it('passes when role matches', () => {
     expect(() => requireRole('ADMIN', make('ADMIN'))).not.toThrow();
@@ -15,12 +24,17 @@ describe('requireRole', () => {
   });
 
   it('throws FORBIDDEN when role insufficient', () => {
-    expect(() => requireRole('ADMIN', make('VIEWER'))).toThrow(ApiError);
-    expect(() => requireRole('ADMIN', make('VIEWER'))).toThrow('FORBIDDEN');
+    const err = catchApiError(() => requireRole('ADMIN', make('VIEWER')));
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe('FORBIDDEN');
+    expect(err.statusCode).toBe(403);
   });
 
   it('throws AUTH_REQUIRED when no actor', () => {
-    expect(() => requireRole('ADMIN', null)).toThrow('AUTH_REQUIRED');
+    const err = catchApiError(() => requireRole('ADMIN', null));
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe('AUTH_REQUIRED');
+    expect(err.statusCode).toBe(401);
   });
 });
 

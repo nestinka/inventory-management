@@ -34,8 +34,9 @@ export function AuditFilters() {
   return (
     <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4">
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground">Action prefix</label>
+        <label htmlFor="audit-filter-action" className="text-xs font-medium text-muted-foreground">Action prefix</label>
         <input
+          id="audit-filter-action"
           type="text"
           value={action}
           onChange={(e) => handleActionChange(e.target.value)}
@@ -44,8 +45,9 @@ export function AuditFilters() {
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground">From</label>
+        <label htmlFor="audit-filter-from" className="text-xs font-medium text-muted-foreground">From</label>
         <input
+          id="audit-filter-from"
           type="date"
           value={from}
           onChange={(e) => {
@@ -56,8 +58,9 @@ export function AuditFilters() {
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground">To</label>
+        <label htmlFor="audit-filter-to" className="text-xs font-medium text-muted-foreground">To</label>
         <input
+          id="audit-filter-to"
           type="date"
           value={to}
           onChange={(e) => {

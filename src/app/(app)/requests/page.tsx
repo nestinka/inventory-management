@@ -57,7 +57,7 @@ export default async function RequestsPage({
       </Suspense>
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">

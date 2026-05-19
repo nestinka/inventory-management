@@ -95,6 +95,8 @@ Six phases, each shippable. Each phase ends with a green CI run, a working `dock
 - E2E smoke tests for each role; perf test for catalogue list.
 - Release `v1.0`.
 
+> **Status (as of 2026-05-19):** All v1.0 features are implemented and shipped. T6.4 (pen-test remediation) is deferred pending the external penetration test engagement. All other Phase 6 items are complete.
+
 ## Beyond v1 (parking lot)
 
 - **v1.1**: per-user notification preferences; partition `audit_logs`; metrics endpoint; PWA offline queue.

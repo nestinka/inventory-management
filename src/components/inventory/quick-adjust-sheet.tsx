@@ -83,6 +83,7 @@ export function QuickAdjustSheet({ onClose }: Props) {
               <input
                 ref={searchRef}
                 type="search"
+                aria-label="Search items by name"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search items by name…"

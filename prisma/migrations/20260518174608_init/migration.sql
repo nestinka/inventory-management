@@ -55,7 +55,6 @@ CREATE TABLE "categories" (
 -- CreateTable
 CREATE TABLE "items" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "sku" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "unit_of_measure" TEXT NOT NULL,
@@ -201,9 +200,6 @@ CREATE UNIQUE INDEX "categories_name_key" ON "categories"("name");
 
 -- CreateIndex
 CREATE INDEX "categories_deleted_at_idx" ON "categories"("deleted_at");
-
--- CreateIndex
-CREATE UNIQUE INDEX "items_sku_key" ON "items"("sku");
 
 -- CreateIndex
 CREATE INDEX "items_category_id_idx" ON "items"("category_id");

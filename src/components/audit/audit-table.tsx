@@ -35,7 +35,7 @@ export function AuditTable({ logs }: AuditTableProps) {
   return (
     <>
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
@@ -81,6 +81,7 @@ export function AuditTable({ logs }: AuditTableProps) {
                     <td className="px-4 py-3 text-center">
                       {hasDiff && (
                         <span
+                          role="img"
                           aria-label="Has diff"
                           className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground"
                         >

@@ -40,7 +40,7 @@ export function CategoryStatusButton({ categoryId, categoryName, currentStatus }
       onClick={toggle}
       disabled={busy}
       className={`flex items-center gap-1 text-xs hover:underline disabled:opacity-60 ${
-        isActive ? 'text-destructive' : 'text-emerald-600'
+        isActive ? 'text-red-700' : 'text-emerald-700'
       }`}
     >
       {busy && <Loader2 className="h-3 w-3 animate-spin" />}

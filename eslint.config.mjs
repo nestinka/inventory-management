@@ -11,7 +11,7 @@ const compat = new FlatCompat({ baseDirectory: __dirname });
 const eslintConfig = [
   // Ignore generated / dependency dirs
   {
-    ignores: ['node_modules/**', '.next/**', 'dist/**'],
+    ignores: ['node_modules/**', '.next/**', 'dist/**', '.claude/**'],
   },
 
   // Extend Next.js recommended rules via compat shim

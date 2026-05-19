@@ -12,39 +12,11 @@ export default defineConfig({
   test: {
     globals: true,
     passWithNoTests: true,
-    setupFiles: ['./tests/helpers/setup.ts'],
+    workspace: './vitest.workspace.ts',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
       exclude: ['**/node_modules/**', '**/.next/**', 'tests/**', 'prisma/**'],
     },
-    projects: [
-      {
-        extends: true,
-        test: {
-          name: 'unit',
-          include: ['tests/unit/**/*.spec.ts'],
-          environment: 'node',
-        },
-      },
-      {
-        extends: true,
-        test: {
-          name: 'component',
-          include: ['tests/component/**/*.spec.{ts,tsx}'],
-          environment: 'jsdom',
-        },
-      },
-      {
-        extends: true,
-        test: {
-          name: 'integration',
-          include: ['tests/integration/**/*.spec.ts'],
-          environment: 'node',
-          testTimeout: 60_000,
-          hookTimeout: 60_000,
-        },
-      },
-    ],
   },
 });

@@ -140,10 +140,11 @@ export function StockAdjuster({ itemId, currentStock, onSuccess }: Props) {
 
       {/* Reason */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-foreground">
+        <label htmlFor="stock-adjuster-reason" className="mb-1.5 block text-sm font-medium text-foreground">
           Reason <span className="text-destructive">*</span>
         </label>
         <select
+          id="stock-adjuster-reason"
           value={reason}
           onChange={(e) => setReason(e.target.value as Reason)}
           className={inputCls}
@@ -156,8 +157,9 @@ export function StockAdjuster({ itemId, currentStock, onSuccess }: Props) {
 
       {/* Note */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-foreground">Note</label>
+        <label htmlFor="stock-adjuster-note" className="mb-1.5 block text-sm font-medium text-foreground">Note</label>
         <input
+          id="stock-adjuster-note"
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}

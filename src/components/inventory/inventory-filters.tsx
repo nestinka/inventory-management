@@ -42,6 +42,7 @@ export function InventoryFilters({ categories, clearParams }: Props) {
         <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <input
           type="search"
+          aria-label="Search items by name"
           placeholder="Search name…"
           defaultValue={searchParams.get('q') ?? ''}
           onChange={(e) => update('q', e.target.value)}
@@ -52,6 +53,7 @@ export function InventoryFilters({ categories, clearParams }: Props) {
       {/* Category */}
       <select
         key={`cat-${searchParams.get('categoryId')}`}
+        aria-label="Filter by category"
         defaultValue={searchParams.get('categoryId') ?? ''}
         onChange={(e) => update('categoryId', e.target.value)}
         className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -65,6 +67,7 @@ export function InventoryFilters({ categories, clearParams }: Props) {
       {/* Status */}
       <select
         key={`status-${searchParams.get('status')}`}
+        aria-label="Filter by status"
         defaultValue={searchParams.get('status') ?? ''}
         onChange={(e) => update('status', e.target.value)}
         className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -78,6 +81,7 @@ export function InventoryFilters({ categories, clearParams }: Props) {
       {/* Stock state */}
       <select
         key={`stock-${searchParams.get('stockState')}`}
+        aria-label="Filter by stock state"
         defaultValue={searchParams.get('stockState') ?? ''}
         onChange={(e) => update('stockState', e.target.value)}
         className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

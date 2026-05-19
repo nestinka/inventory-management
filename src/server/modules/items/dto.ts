@@ -8,11 +8,22 @@ export const CreateItemDto = z.object({
   categoryId: z.string().uuid(),
   currentStock: z.number().int().min(0).default(0),
   reorderThreshold: z.number().int().min(0).default(0),
-  expiryDate: z.string().date().optional().nullable(),
+  expiryDate: z.string().date().or(z.literal('').transform(() => null as null)).optional().nullable(),
   status: z.nativeEnum(ItemStatus).default(ItemStatus.ACTIVE),
 });
 
-export const UpdateItemDto = CreateItemDto.partial();
+// Explicit partial — NO .default() on numeric fields so a PUT that omits
+// currentStock / reorderThreshold never silently writes 0 to the DB.
+export const UpdateItemDto = z.object({
+  name: z.string().min(1).max(200).trim().optional(),
+  description: z.string().max(1000).trim().optional().nullable(),
+  unitOfMeasure: z.string().min(1).max(50).trim().optional(),
+  categoryId: z.string().uuid().optional(),
+  currentStock: z.number().int().min(0).optional(),
+  reorderThreshold: z.number().int().min(0).optional(),
+  expiryDate: z.string().date().or(z.literal('').transform(() => null as null)).optional().nullable(),
+  status: z.nativeEnum(ItemStatus).optional(),
+});
 
 export const ListItemsDto = z.object({
   q: z.string().optional(),

@@ -3,7 +3,14 @@ import { LoginForm } from '@/components/auth/login-form';
 
 export const metadata: Metadata = { title: 'Sign in' };
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{ reset?: string }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const { reset } = await searchParams;
+  const resetSuccess = reset === '1';
+
   return (
     <div className="rounded-2xl bg-white px-8 py-10 shadow-lg ring-1 ring-border">
       <div className="mb-8 text-center">
@@ -13,7 +20,7 @@ export default function LoginPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Inventory</h1>
         <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
       </div>
-      <LoginForm />
+      <LoginForm resetSuccess={resetSuccess} />
     </div>
   );
 }

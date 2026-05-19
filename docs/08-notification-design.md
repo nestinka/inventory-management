@@ -12,8 +12,8 @@
 
 | Topic | Producer | Payload (excerpt) | Default recipients |
 |---|---|---|---|
-| `item.lowStock` | `stockService.adjust`, low-stock scanner | `{ itemId, sku, currentStock, threshold }` | All ADMINs |
-| `item.nearExpiry` | near-expiry scanner | `{ items: [{ id, sku, expiryDate }], windowDays }` | All ADMINs (digest) |
+| `item.lowStock` | `stockService.adjust`, low-stock scanner | `{ itemId, name, currentStock, threshold }` | All ADMINs |
+| `item.nearExpiry` | near-expiry scanner | `{ items: [{ id, name, expiryDate }], windowDays }` | All ADMINs (digest) |
 | `request.submitted` | `requestsService.create` | `{ requestId, requesterName, lineCount }` | All ADMINs |
 | `request.approved` | `requestsService.approve` | `{ requestId, lines }` | Requester |
 | `request.rejected` | `requestsService.reject` | `{ requestId, note }` | Requester |

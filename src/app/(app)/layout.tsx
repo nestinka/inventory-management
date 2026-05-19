@@ -1,10 +1,13 @@
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
 import { BottomTabBar } from '@/components/layout/bottom-tab-bar';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  // Pre-warm Next.js 15 async headers cache before NextAuth v5 accesses it synchronously.
+  await headers();
   const session = await auth();
   if (!session) redirect('/login');
 

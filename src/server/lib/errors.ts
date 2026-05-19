@@ -3,7 +3,6 @@ export type ErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'VALIDATION_FAILED'
-  | 'DUPLICATE_SKU'
   | 'STOCK_BELOW_ZERO'
   | 'STALE_REQUEST'
   | 'RATE_LIMITED'

@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Package, Zap, Tag, Layers, FileText, ClipboardList, Users, BarChart3,
+  LayoutDashboard, Package, Zap, Tag, Layers, FileText, ClipboardList, Users, BarChart3, Bell,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -17,6 +17,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Categories',  href: '/catalogue/categories',      icon: Tag,         roles: ['ADMIN'] },
   { label: 'Items',       href: '/catalogue/items',           icon: Layers,      roles: ['ADMIN'] },
   { label: 'Requests',    href: '/requests',                  icon: FileText },
+  { label: 'Notifications', href: '/notifications',            icon: Bell },
   { label: 'Audit Log',   href: '/audit',                     icon: ClipboardList, roles: ['ADMIN', 'VIEWER'] },
   { label: 'Reports',     href: '/reports',                   icon: BarChart3 },
   { label: 'Users',       href: '/users',                     icon: Users,       roles: ['ADMIN'] },

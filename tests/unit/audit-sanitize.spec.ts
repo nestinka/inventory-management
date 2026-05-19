@@ -13,7 +13,7 @@ describe('sanitizeDiff', () => {
   });
 
   it('passes through benign fields', () => {
-    const obj = { sku: 'LAP-001', currentStock: 5, reason: 'DAMAGE' };
+    const obj = { name: 'Widget A', currentStock: 5, reason: 'DAMAGE' };
     expect(sanitizeDiff(obj)).toEqual(obj);
   });
 

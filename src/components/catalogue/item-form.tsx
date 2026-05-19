@@ -15,7 +15,7 @@ const baseSchema = z.object({
   unitOfMeasure: z.string().min(1, 'Required').max(50).trim(),
   categoryId: z.string().min(1, 'Required'),
   reorderThreshold: z.coerce.number().int().min(0).default(0),
-  expiryDate: z.string().optional(),
+  expiryDate: z.string().optional().nullable(),
   status: z.enum(STATUS_VALUES),
 });
 
@@ -57,10 +57,14 @@ export function ItemForm({ itemId, defaultValues, categories }: Props) {
   const onSubmit = async (values: FormValues) => {
     setServerError(null);
     const url = itemId ? `/api/v1/items/${itemId}` : '/api/v1/items';
+
+    // Normalise expiryDate: <input type="date"> sends "" when blank — coerce to null
+    const normalised = { ...values, expiryDate: values.expiryDate || null };
+
     // On edit, strip currentStock — it's server-immutable after creation
     const body: Partial<FormValues> = isEdit
-      ? (({ currentStock: _c, ...rest }: FormValues) => rest)(values as FormValues & { currentStock: number })
-      : values;
+      ? (({ currentStock: _c, ...rest }: typeof normalised) => rest)(normalised as typeof normalised & { currentStock: number })
+      : normalised;
 
     const res = await fetch(url, {
       method: itemId ? 'PATCH' : 'POST',
