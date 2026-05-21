@@ -5,7 +5,7 @@ import { listItems } from '@/server/modules/items';
 import { listCategories } from '@/server/modules/categories';
 import { StockBadge } from '@/components/ui/stock-badge';
 import { InventoryFilters } from '@/components/inventory/inventory-filters';
-import { formatDate } from '@/lib/utils';
+import { formatDate, isWithinDays } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Inventory' };
 export const dynamic = 'force-dynamic';
@@ -65,7 +65,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
                   </td>
                   <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
                     {item.expiryDate ? (
-                      <span className={new Date(item.expiryDate) < new Date(Date.now() + 30 * 86400000) ? 'text-amber-700 font-medium' : ''}>
+                      <span className={isWithinDays(item.expiryDate, 30) ? 'text-amber-700 font-medium' : ''}>
                         {formatDate(item.expiryDate)}
                       </span>
                     ) : '—'}

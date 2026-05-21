@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Trash2, Search, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Search, Loader2, Sparkles } from 'lucide-react';
 import { StockBadge } from '@/components/ui/stock-badge';
 
 interface ItemResult {
@@ -16,11 +16,30 @@ interface ItemResult {
   unitOfMeasure: string;
 }
 
-const lineSchema = z.object({
-  itemId: z.string().uuid('Select an item'),
-  itemLabel: z.string().min(1),
-  requestedQty: z.coerce.number().int().min(1, 'Min 1'),
-});
+interface Category {
+  id: string;
+  name: string;
+}
+
+const lineSchema = z
+  .object({
+    mode: z.enum(['existing', 'new']),
+    itemId: z.string(),
+    itemLabel: z.string(),
+    newName: z.string(),
+    newUnit: z.string(),
+    newCategoryId: z.string(),
+    requestedQty: z.coerce.number().int().min(1, 'Min 1'),
+  })
+  .superRefine((l, ctx) => {
+    if (l.mode === 'existing') {
+      if (!l.itemId) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['itemId'], message: 'Select an item' });
+    } else {
+      if (!l.newName.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['newName'], message: 'Item name is required' });
+      if (!l.newUnit.trim()) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['newUnit'], message: 'Unit is required' });
+      if (!l.newCategoryId) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['newCategoryId'], message: 'Category is required' });
+    }
+  });
 
 const formSchema = z.object({
   reason: z.string().min(1, 'Reason is required').max(500),
@@ -28,13 +47,25 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+type LineValue = FormValues['lines'][number];
+
+const emptyLine: LineValue = {
+  mode: 'existing',
+  itemId: '',
+  itemLabel: '',
+  newName: '',
+  newUnit: '',
+  newCategoryId: '',
+  requestedQty: 1,
+};
 
 const inputCls = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-function ItemPicker({ value, onChange, onBlur }: {
+function ItemPicker({ value, onChange, onBlur, onCreateNew }: {
   value: { itemId: string; itemLabel: string };
   onChange: (v: { itemId: string; itemLabel: string }) => void;
   onBlur: () => void;
+  onCreateNew: (name: string) => void;
 }) {
   const [query, setQuery] = useState(value.itemLabel || '');
   const [results, setResults] = useState<ItemResult[]>([]);
@@ -77,6 +108,8 @@ function ItemPicker({ value, onChange, onBlur }: {
     setOpen(false); setResults([]);
   };
 
+  const trimmed = query.trim();
+
   return (
     <div ref={containerRef} className="relative flex-1">
       <div className="relative">
@@ -85,13 +118,14 @@ function ItemPicker({ value, onChange, onBlur }: {
           type="text"
           value={query}
           onChange={(e) => { setQuery(e.target.value); search(e.target.value); onChange({ itemId: '', itemLabel: e.target.value }); }}
+          onFocus={() => { if (trimmed) setOpen(true); }}
           placeholder="Search item…"
           className="w-full rounded-lg border border-input bg-background py-2 pl-8 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           autoComplete="off"
         />
         {loading && <Loader2 className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />}
       </div>
-      {open && results.length > 0 && (
+      {open && trimmed.length > 0 && (
         <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-border bg-card shadow-lg">
           {results.map((item) => (
             <button key={item.id} type="button" onMouseDown={() => select(item)}
@@ -103,8 +137,52 @@ function ItemPicker({ value, onChange, onBlur }: {
               <StockBadge state={item.stockState} stock={item.currentStock} />
             </button>
           ))}
+          <button type="button" onMouseDown={() => { setOpen(false); onCreateNew(trimmed); }}
+            className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-left text-sm text-primary hover:bg-muted transition-colors">
+            <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">Request <span className="font-medium">“{trimmed}”</span> as a new item</span>
+          </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function NewItemFields({ value, categories, onChange, onSearchInstead }: {
+  value: LineValue;
+  categories: Category[];
+  onChange: (v: Partial<LineValue>) => void;
+  onSearchInstead: () => void;
+}) {
+  return (
+    <div className="flex-1 space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-2.5">
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> New item (not in catalogue)
+        </span>
+        <button type="button" onClick={onSearchInstead}
+          className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+          Search existing instead
+        </button>
+      </div>
+      <input
+        type="text" value={value.newName} onChange={(e) => onChange({ newName: e.target.value })}
+        placeholder="Item name" aria-label="New item name" className={inputCls} autoComplete="off"
+      />
+      <div className="flex gap-2">
+        <input
+          type="text" value={value.newUnit} onChange={(e) => onChange({ newUnit: e.target.value })}
+          placeholder="Unit (e.g. pcs)" aria-label="Unit of measure" className={`${inputCls} flex-1`} autoComplete="off"
+        />
+        <select
+          value={value.newCategoryId} onChange={(e) => onChange({ newCategoryId: e.target.value })}
+          aria-label="Category" className={`${inputCls} flex-1`}
+        >
+          <option value="">Category…</option>
+          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+      <p className="text-xs text-muted-foreground">An admin will add this to the catalogue when approving the request.</p>
     </div>
   );
 }
@@ -112,10 +190,20 @@ function ItemPicker({ value, onChange, onBlur }: {
 export function NewRequestForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/v1/categories?limit=100&status=ACTIVE')
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((d: { data: Category[] }) => { if (active) setCategories(d.data ?? []); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const { register, control, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { reason: '', lines: [{ itemId: '', itemLabel: '', requestedQty: 1 }] },
+    defaultValues: { reason: '', lines: [{ ...emptyLine }] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
@@ -127,7 +215,14 @@ export function NewRequestForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         reason: values.reason,
-        lines: values.lines.map((l) => ({ itemId: l.itemId, requestedQty: l.requestedQty })),
+        lines: values.lines.map((l) =>
+          l.mode === 'existing'
+            ? { itemId: l.itemId, requestedQty: l.requestedQty }
+            : {
+                newItem: { name: l.newName.trim(), unitOfMeasure: l.newUnit.trim(), categoryId: l.newCategoryId },
+                requestedQty: l.requestedQty,
+              },
+        ),
       }),
     });
     if (!res.ok) {
@@ -155,7 +250,7 @@ export function NewRequestForm() {
           <label className="text-sm font-medium text-foreground">
             Lines <span className="text-destructive">*</span>
           </label>
-          <button type="button" onClick={() => append({ itemId: '', itemLabel: '', requestedQty: 1 })}
+          <button type="button" onClick={() => append({ ...emptyLine })}
             className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors">
             <Plus className="h-3.5 w-3.5" /> Add line
           </button>
@@ -166,15 +261,25 @@ export function NewRequestForm() {
               <div className="flex gap-2">
                 <Controller control={control} name={`lines.${index}`}
                   render={({ field: f }) => (
-                    <ItemPicker
-                      value={{ itemId: f.value.itemId, itemLabel: f.value.itemLabel }}
-                      onChange={(v) => f.onChange({ ...f.value, ...v })}
-                      onBlur={f.onBlur}
-                    />
+                    f.value.mode === 'new' ? (
+                      <NewItemFields
+                        value={f.value}
+                        categories={categories}
+                        onChange={(v) => f.onChange({ ...f.value, ...v })}
+                        onSearchInstead={() => f.onChange({ ...f.value, mode: 'existing', newName: '', newUnit: '', newCategoryId: '' })}
+                      />
+                    ) : (
+                      <ItemPicker
+                        value={{ itemId: f.value.itemId, itemLabel: f.value.itemLabel }}
+                        onChange={(v) => f.onChange({ ...f.value, ...v })}
+                        onBlur={f.onBlur}
+                        onCreateNew={(name) => f.onChange({ ...f.value, mode: 'new', itemId: '', itemLabel: '', newName: name })}
+                      />
+                    )
                   )}
                 />
                 <input type="number" min={1} {...register(`lines.${index}.requestedQty`)}
-                  className="w-20 rounded-lg border border-input bg-background px-2 py-2 text-center text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="h-9 w-20 shrink-0 rounded-lg border border-input bg-background px-2 py-2 text-center text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Quantity" />
                 {fields.length > 1 && (
                   <button type="button" onClick={() => remove(index)}
@@ -184,9 +289,13 @@ export function NewRequestForm() {
                   </button>
                 )}
               </div>
-              {(errors.lines?.[index]?.itemId || errors.lines?.[index]?.requestedQty) && (
+              {errors.lines?.[index] && (
                 <p className="mt-1.5 text-xs text-destructive">
-                  {errors.lines?.[index]?.itemId?.message ?? errors.lines?.[index]?.requestedQty?.message}
+                  {errors.lines[index]?.itemId?.message
+                    ?? errors.lines[index]?.newName?.message
+                    ?? errors.lines[index]?.newUnit?.message
+                    ?? errors.lines[index]?.newCategoryId?.message
+                    ?? errors.lines[index]?.requestedQty?.message}
                 </p>
               )}
             </div>

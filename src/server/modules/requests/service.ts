@@ -1,4 +1,4 @@
-import { RequestStatus, AdjustmentReason } from '@prisma/client';
+import { RequestStatus, AdjustmentReason, ItemStatus } from '@prisma/client';
 import { prisma } from '@/server/db/client';
 import { eventBus } from '@/server/events/bus';
 import { writeAudit } from '@/server/lib/audit';
@@ -14,7 +14,12 @@ import type {
 const requestInclude = {
   requester: { select: { id: true, name: true, email: true } },
   approver: { select: { id: true, name: true, email: true } },
-  lines: { include: { item: { select: { id: true, name: true, unitOfMeasure: true } } } },
+  lines: {
+    include: {
+      item: { select: { id: true, name: true, unitOfMeasure: true } },
+      customCategory: { select: { id: true, name: true } },
+    },
+  },
   statusEvents: { orderBy: { createdAt: 'asc' as const } },
 };
 
@@ -35,7 +40,8 @@ function assertTransition(from: RequestStatus, to: RequestStatus) {
 }
 
 export async function listRequests(input: ListRequestsInput, actor: Actor) {
-  const selfOnly = actor.role === 'EDITOR' || actor.role === 'VIEWER';
+  // ADMIN and EDITOR see all requests; VIEWER is scoped to their own.
+  const selfOnly = actor.role === 'VIEWER';
   const where = {
     ...(input.status && { status: input.status }),
     ...(selfOnly && { requesterId: actor.id }),
@@ -59,22 +65,44 @@ export async function listRequests(input: ListRequestsInput, actor: Actor) {
 
 export async function getRequest(id: string, actor: Actor) {
   const req = await getOrFail(id);
-  if (actor.role === 'EDITOR' || actor.role === 'VIEWER') requireOwnerOrAdmin(req.requesterId, actor);
+  // ADMIN and EDITOR may read any request; VIEWER only their own.
+  if (actor.role === 'VIEWER') requireOwnerOrAdmin(req.requesterId, actor);
   return req;
 }
 
 export async function createRequest(input: CreateRequestInput, actor: Actor, ctx?: AuditContext) {
   return prisma.$transaction(async (tx) => {
+    // Validate proposed (non-catalogue) lines reference a real, active category.
+    const proposedCategoryIds = [
+      ...new Set(input.lines.flatMap((l) => (l.newItem ? [l.newItem.categoryId] : []))),
+    ];
+    if (proposedCategoryIds.length > 0) {
+      const found = await tx.category.findMany({
+        where: { id: { in: proposedCategoryIds }, status: 'ACTIVE' },
+        select: { id: true },
+      });
+      const ok = new Set(found.map((c) => c.id));
+      for (const id of proposedCategoryIds) {
+        if (!ok.has(id)) throw new ApiError('VALIDATION_FAILED', 422, `Category ${id} not found or inactive`);
+      }
+    }
+
     const req = await tx.request.create({
       data: {
         requesterId: actor.id,
         reason: input.reason,
         status: RequestStatus.PENDING,
         lines: {
-          create: input.lines.map((l) => ({
-            itemId: l.itemId,
-            requestedQty: l.requestedQty,
-          })),
+          create: input.lines.map((l) =>
+            l.itemId
+              ? { itemId: l.itemId, requestedQty: l.requestedQty }
+              : {
+                  requestedQty: l.requestedQty,
+                  customItemName: l.newItem!.name,
+                  customUnit: l.newItem!.unitOfMeasure,
+                  customCategoryId: l.newItem!.categoryId,
+                },
+          ),
         },
       },
       include: requestInclude,
@@ -107,7 +135,36 @@ export async function approveRequest(id: string, input: ApproveRequestInput, act
       if (!line) throw new ApiError('NOT_FOUND', 404, `Line ${l.lineId} not found`);
       if (l.approvedQty > line.requestedQty)
         throw new ApiError('VALIDATION_FAILED', 422, `approvedQty cannot exceed requestedQty for line ${l.lineId}`);
-      await tx.requestLine.update({ where: { id: l.lineId }, data: { approvedQty: l.approvedQty } });
+
+      // Promote a proposed (non-catalogue) line into a real item on approval, so
+      // it can be fulfilled like any other. Only when the line is actually approved.
+      let promotedItemId: string | null = null;
+      if (!line.itemId && l.approvedQty > 0) {
+        if (!line.customItemName || !line.customUnit || !line.customCategoryId) {
+          throw new ApiError('VALIDATION_FAILED', 422, `Line ${l.lineId} is missing new-item details`);
+        }
+        const created = await tx.item.create({
+          data: {
+            name: line.customItemName,
+            unitOfMeasure: line.customUnit,
+            categoryId: line.customCategoryId,
+            currentStock: 0,
+            reorderThreshold: 0,
+            status: ItemStatus.ACTIVE,
+            createdById: actor.id,
+          },
+        });
+        promotedItemId = created.id;
+        await writeAudit(tx, {
+          actorId: actor.id, action: 'item.create', targetType: 'item',
+          targetId: created.id, diff: { after: created, viaRequest: id }, ctx,
+        });
+      }
+
+      await tx.requestLine.update({
+        where: { id: l.lineId },
+        data: { approvedQty: l.approvedQty, ...(promotedItemId ? { itemId: promotedItemId } : {}) },
+      });
     }
 
     const updated = await tx.request.update({
@@ -189,6 +246,8 @@ export async function fulfilRequest(id: string, input: FulfilRequestInput, actor
         throw new ApiError('VALIDATION_FAILED', 422, `fulfilledQty cannot exceed approvedQty for line ${l.lineId}`);
 
       if (l.fulfilledQty > 0) {
+        if (!line.itemId)
+          throw new ApiError('VALIDATION_FAILED', 422, `Line ${l.lineId} has no catalogue item to fulfil`);
         const item = await tx.item.findFirst({ where: { id: line.itemId, deletedAt: null } });
         if (!item) throw new ApiError('NOT_FOUND', 404, `Item ${line.itemId} not found`);
 

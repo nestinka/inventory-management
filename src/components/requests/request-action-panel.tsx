@@ -16,6 +16,7 @@ interface Props {
   status: string;
   lines: Line[];
   canAdmin: boolean;
+  canApprove: boolean;
   isOwner: boolean;
 }
 
@@ -26,7 +27,7 @@ const btnDanger  = 'flex items-center gap-2 rounded-lg bg-destructive px-4 py-2 
 const btnGhost   = 'rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors';
 const inputCls   = 'w-20 rounded-lg border border-input bg-background px-2 py-1.5 text-center text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
-export function RequestActionPanel({ requestId, status, lines, canAdmin, isOwner }: Props) {
+export function RequestActionPanel({ requestId, status, lines, canAdmin, canApprove, isOwner }: Props) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>(null);
   const [busy, setBusy] = useState(false);
@@ -71,7 +72,7 @@ export function RequestActionPanel({ requestId, status, lines, canAdmin, isOwner
   });
 
   const hasActions =
-    (status === 'PENDING' && (canAdmin || isOwner)) ||
+    (status === 'PENDING' && (canApprove || isOwner)) ||
     (status === 'APPROVED' && (canAdmin || isOwner));
 
   if (!hasActions) return null;
@@ -83,7 +84,7 @@ export function RequestActionPanel({ requestId, status, lines, canAdmin, isOwner
       {/* Idle: show action buttons */}
       {!mode && (
         <div className="flex flex-wrap gap-2">
-          {status === 'PENDING' && canAdmin && (
+          {status === 'PENDING' && canApprove && (
             <>
               <button type="button" onClick={() => { setLineQtys(Object.fromEntries(lines.map((l) => [l.id, l.requestedQty]))); setMode('approve'); }} className={btnPrimary}>
                 Approve

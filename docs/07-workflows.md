@@ -7,8 +7,8 @@ Mermaid diagrams for the three workflows that span more than one screen.
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING : Editor submits request
-    PENDING --> APPROVED : Admin approves\n(sets approvedQty per line)
-    PENDING --> REJECTED : Admin rejects (note required)
+    PENDING --> APPROVED : Admin/Editor approves\n(sets approvedQty per line)
+    PENDING --> REJECTED : Admin/Editor rejects (note required)
     PENDING --> CANCELLED : Requester (own) or Admin cancels
     APPROVED --> FULFILLED : Admin marks fulfilled\n(stock decremented; FULFILMENT adjustments written)
     APPROVED --> CANCELLED : Admin cancels (note required)

@@ -139,8 +139,8 @@ Business rules:
 | GET | `/requests/:id` | as above |
 | POST | `/requests` | EDITOR, ADMIN |
 | POST | `/requests/:id/cancel` | requester (if PENDING) or ADMIN |
-| POST | `/requests/:id/approve` | ADMIN |
-| POST | `/requests/:id/reject` | ADMIN |
+| POST | `/requests/:id/approve` | ADMIN, EDITOR |
+| POST | `/requests/:id/reject` | ADMIN, EDITOR |
 | POST | `/requests/:id/fulfil` | ADMIN |
 
 Body (POST `/requests`):
@@ -149,10 +149,16 @@ Body (POST `/requests`):
   "reason": "Re-stocking helpdesk drawer",
   "lines": [
     { "itemId": "uuid", "requestedQty": 5 },
-    { "itemId": "uuid", "requestedQty": 1 }
+    { "newItem": { "name": "USB-C dock", "unitOfMeasure": "pcs", "categoryId": "uuid" }, "requestedQty": 1 }
   ]
 }
 ```
+
+Each line carries **exactly one** of `itemId` (an existing catalogue item) or `newItem`
+(an item not yet in the catalogue). A `newItem` line is stored as a proposal
+(`item_id` NULL + `custom_item_name`/`custom_unit`/`custom_category_id`); on **approval**
+it is promoted into a real catalogue item (0 stock) and the line is linked, after which it
+fulfils like any other. `newItem.categoryId` must reference an active category, else `422`.
 
 Body (POST `/requests/:id/approve`):
 ```json

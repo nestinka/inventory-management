@@ -36,7 +36,8 @@ Each module under `src/server/modules/<name>/` has:
 
 - Every new service method → unit test for happy path + at least one error path.
 - Every new API route → integration test for happy path + RBAC rejection.
-- Every new audit action → row in `tests/unit/audit-coverage.spec.ts` (file to be created in T6).
+- Every new audit action → entry in `EXPECTED_AUDIT_ACTIONS` in `tests/unit/audit-coverage.spec.ts` (the gate fails on any unregistered verb).
+- Every new event topic → entry in `EXPECTED_EVENT_TOPICS` in `tests/unit/notifications-coverage.spec.ts` (the gate fails on any unregistered or unwired topic).
 
 ## Seed credentials (dev)
 
@@ -53,4 +54,4 @@ Copy `.env.example` to `.env`. Defaults work with `docker compose up -d postgres
 ## Task backlog
 
 See `docs/13-agent-tasks.md` for the full AI-agent task queue.
-Current phase: **Phase 0 done → Phase 1 next** (T1.1 – T1.5).
+Status: **all phases (0–6) complete and shipped as v1.0**. The only open backlog item is **T6.4 (pen-test remediation)**, deferred pending an external penetration-test engagement. Future scope lives in `docs/12-roadmap.md` under "Beyond v1".

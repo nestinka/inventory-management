@@ -41,6 +41,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
   if (!req) notFound();
 
   const canAdmin = actor.role === 'ADMIN';
+  const canApprove = actor.role === 'ADMIN' || actor.role === 'EDITOR';
   const isOwner = req.requesterId === actor.id;
 
   return (
@@ -80,9 +81,10 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
               id: l.id,
               requestedQty: l.requestedQty,
               approvedQty: l.approvedQty,
-              item: { name: l.item.name },
+              item: { name: l.item?.name ?? l.customItemName ?? 'New item' },
             }))}
             canAdmin={canAdmin}
+            canApprove={canApprove}
             isOwner={isOwner}
           />
 
@@ -118,8 +120,19 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
                   {req.lines.map((line) => (
                     <tr key={line.id}>
                       <td className="px-4 py-2.5">
-                        <p className="font-medium text-foreground">{line.item.name}</p>
-                        <p className="text-xs text-muted-foreground">{line.item.unitOfMeasure}</p>
+                        <p className="font-medium text-foreground">
+                          {line.item ? line.item.name : line.customItemName}
+                          {!line.item && (
+                            <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 align-middle text-[10px] font-medium text-primary">
+                              New
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {line.item
+                            ? line.item.unitOfMeasure
+                            : [line.customUnit, line.customCategory?.name].filter(Boolean).join(' · ')}
+                        </p>
                       </td>
                       <td className="px-4 py-2.5 text-right text-foreground">{line.requestedQty}</td>
                       <td className="px-4 py-2.5 text-right text-muted-foreground">

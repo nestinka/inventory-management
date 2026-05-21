@@ -85,7 +85,8 @@ model Category {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
 
-  items Item[]
+  items                     Item[]
+  proposedInRequestLines    RequestLine[] @relation("RequestLineCustomCategory")
 
   @@index([status])
   @@map("categories")
@@ -167,13 +168,20 @@ model Request {
 model RequestLine {
   id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   requestId    String  @map("request_id") @db.Uuid
-  itemId       String  @map("item_id") @db.Uuid
+  itemId       String? @map("item_id") @db.Uuid
   requestedQty Int     @map("requested_qty")
   approvedQty  Int?    @map("approved_qty")
   fulfilledQty Int     @default(0) @map("fulfilled_qty")
 
-  request Request @relation(fields: [requestId], references: [id])
-  item    Item    @relation(fields: [itemId], references: [id])
+  // Proposed (non-catalogue) item — captured at request time, promoted to a real
+  // Item on approval. Mutually exclusive with itemId.
+  customItemName   String? @map("custom_item_name")
+  customUnit       String? @map("custom_unit")
+  customCategoryId String? @map("custom_category_id") @db.Uuid
+
+  request        Request   @relation(fields: [requestId], references: [id])
+  item           Item?     @relation(fields: [itemId], references: [id])
+  customCategory Category? @relation("RequestLineCustomCategory", fields: [customCategoryId], references: [id])
 
   @@index([requestId])
   @@index([itemId])

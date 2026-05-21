@@ -1,14 +1,27 @@
 import { z } from 'zod';
 import { RequestStatus } from '@prisma/client';
 
+export const NewRequestItemDto = z.object({
+  name: z.string().min(1).max(200).trim(),
+  unitOfMeasure: z.string().min(1).max(20).trim(),
+  categoryId: z.string().uuid(),
+});
+
 export const CreateRequestDto = z.object({
   reason: z.string().min(1).max(500).trim(),
   lines: z
     .array(
-      z.object({
-        itemId: z.string().uuid(),
-        requestedQty: z.number().int().min(1),
-      }),
+      z
+        .object({
+          // An existing catalogue item …
+          itemId: z.string().uuid().optional(),
+          // … or a proposed item not yet in the catalogue (created on approval).
+          newItem: NewRequestItemDto.optional(),
+          requestedQty: z.number().int().min(1),
+        })
+        .refine((l) => (l.itemId == null) !== (l.newItem == null), {
+          message: 'Each line must reference either an existing itemId or a newItem (not both)',
+        }),
     )
     .min(1),
 });

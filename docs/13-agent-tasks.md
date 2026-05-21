@@ -63,7 +63,7 @@ This is the work queue. Each task is self-contained — a coding agent can pick 
 
 ### T1.2 — Items module
 - Scope: same shape as categories. Includes `stockState` derivation.
-- Acceptance: creating an item with a duplicate name returns `VALIDATION_FAILED`.
+- Acceptance: creating an item with an invalid body (e.g. missing `name`) returns `VALIDATION_FAILED`; ADMIN and EDITOR may create items.
 
 ### T1.3 — Categories & items API routes
 - Scope: route handlers under `app/api/v1/categories` and `app/api/v1/items` per [04-api-specifications.md](./04-api-specifications.md). Use a shared `withRoute(handler)` helper to wire session, RBAC, validation, logging, error mapping.
@@ -107,15 +107,16 @@ This is the work queue. Each task is self-contained — a coding agent can pick 
 
 ### T3.1 — Requests module + status machine
 - Scope: `src/server/modules/requests/`. Methods: `create`, `cancel`, `approve`, `reject`, `fulfil`. Each transitions status, writes `request_status_events`, writes audit, and emits an event. Fulfilment calls `stockService.adjustMany` inside the tx.
-- Acceptance: state-machine matrix tested exhaustively (every from→to and every forbidden transition).
+- A line may reference an existing item (`itemId`) **or** propose a non-catalogue item (`newItem: { name, unitOfMeasure, categoryId }`, stored on the line as `custom_*`). On approval, an approved (`approvedQty > 0`) proposed line is promoted into a real catalogue item (0 stock, `item.create` audit) and linked, then fulfils normally.
+- Acceptance: state-machine matrix tested exhaustively (every from→to and every forbidden transition); a proposed line is stored unlinked on create and promoted to a real item on approval.
 
 ### T3.2 — Requests API
-- Scope: routes per spec. Owner-scoped reads for editors.
-- Acceptance: editor cannot view another editor's request via API; integration test asserts 404.
+- Scope: routes per spec. ADMIN and EDITOR may read all requests; VIEWER reads are owner-scoped.
+- Acceptance: a viewer cannot view another user's request via API (integration test asserts 403 `FORBIDDEN`); an editor can read any request (200).
 
 ### T3.3 — Requests UI: list + new request
-- Scope: `/requests` with status filter chips; `/requests/new` multi-line form (add/remove lines, item picker with current stock visible).
-- Acceptance: submitting empty form fails validation; over-allocating a line over current stock is allowed (request still submits — admins may reject).
+- Scope: `/requests` with status filter chips; `/requests/new` multi-line form (add/remove lines, item picker with current stock visible). The picker also offers "Request '<query>' as a new item", revealing name + unit + category fields for items not yet in the catalogue.
+- Acceptance: submitting empty form fails validation; over-allocating a line over current stock is allowed (request still submits — admins may reject); a new-item line requires name + unit + category and renders with a "New" badge on the detail page until approval promotes it.
 
 ### T3.4 — Request detail with approval / fulfil panel
 - Scope: `/requests/[id]` shows lines, status badge, status timeline, and a role-gated action bar (approve / reject / cancel / fulfil).
@@ -163,7 +164,7 @@ This is the work queue. Each task is self-contained — a coding agent can pick 
 
 ### T5.4 — Audit explorer UI
 - Scope: `/audit` with filters and a row drill-in showing the `diff` rendered key-by-key.
-- Acceptance: viewer & admin can access; editor cannot.
+- Acceptance: admin & editor can access; viewer cannot.
 
 ---
 

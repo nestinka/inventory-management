@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
             log.actor?.name ?? 'System',
             log.actor?.email ?? '',
             log.action,
-            `${ACTION_DESCRIPTIONS[log.action] ?? log.action} (${log.targetType}${log.targetId ? ` · ${log.targetId}` : ''})`,
+            `${ACTION_DESCRIPTIONS[log.action] ?? log.action} (${log.targetType}${log.targetName ? ` · ${log.targetName}` : log.targetId ? ` · ${log.targetId}` : ''})`,
             log.ip ?? '',
           ]),
         );

@@ -22,29 +22,31 @@ export function QuickAdjustSheet({ onClose }: Props) {
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<ItemResult | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     searchRef.current?.focus();
   }, []);
 
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!query.trim()) { setResults([]); return; }
-    debounceRef.current = setTimeout(async () => {
+    const q = query.trim();
+    if (!q) return;
+    const handle = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/v1/items?q=${encodeURIComponent(query.trim())}&limit=10`);
+        const res = await fetch(`/api/v1/items?q=${encodeURIComponent(q)}&limit=10`);
         if (res.ok) {
-          const data = await res.json() as { data: ItemResult[] };
+          const data = (await res.json()) as { data: ItemResult[] };
           setResults(data.data);
         }
       } finally {
         setLoading(false);
       }
     }, 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => clearTimeout(handle);
   }, [query]);
+
+  // Hide stale results when the query is empty (derived, not effect-driven state).
+  const visibleResults = query.trim() ? results : [];
 
   const handleSuccess = () => {
     setSelected(null);
@@ -95,9 +97,9 @@ export function QuickAdjustSheet({ onClose }: Props) {
             </div>
 
             {/* Results */}
-            {results.length > 0 ? (
+            {visibleResults.length > 0 ? (
               <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-                {results.map((item) => (
+                {visibleResults.map((item) => (
                   <button
                     key={item.id}
                     type="button"

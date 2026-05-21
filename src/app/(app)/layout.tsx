@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Topbar } from '@/components/layout/topbar';
@@ -12,11 +12,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!session) redirect('/login');
 
   const role = (session.user as { role?: string }).role;
+  // Read persisted collapse state so the server renders the right width (no flash).
+  const sidebarCollapsed = (await cookies()).get('sidebar-collapsed')?.value === 'true';
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop sidebar */}
-      <Sidebar className="hidden lg:flex" role={role} />
+      <Sidebar className="hidden lg:flex" role={role} defaultCollapsed={sidebarCollapsed} />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar session={session} />

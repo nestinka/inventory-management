@@ -35,12 +35,16 @@ export default defineWorkspace([
     resolve: sharedResolve,
     test: {
       ...sharedSetup,
+      setupFiles: ['./tests/helpers/setup.ts', './tests/helpers/integration-setup.ts'],
+      globalSetup: ['./tests/helpers/global-setup.ts'],
       name: 'integration',
       include: ['tests/integration/**/*.spec.ts'],
       exclude: ['**/node_modules/**'],
       environment: 'node',
       testTimeout: 60_000,
-      hookTimeout: 60_000,
+      hookTimeout: 120_000,
+      pool: 'forks',
+      poolOptions: { forks: { singleFork: true } },
     },
   },
 ]);

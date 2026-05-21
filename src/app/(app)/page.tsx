@@ -7,7 +7,7 @@ import {
 import { prisma } from '@/server/db/client';
 import { StatCard } from '@/components/ui/stat-card';
 import { env } from '@/env';
-import { formatDate } from '@/lib/utils';
+import { formatDate, daysUntil } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Dashboard' };
 export const dynamic = 'force-dynamic';
@@ -336,9 +336,7 @@ export default async function DashboardPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {attention.nearExpiryItems.map((item) => {
-                  const daysLeft = item.expiryDate
-                    ? Math.ceil((new Date(item.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-                    : null;
+                  const daysLeft = item.expiryDate ? daysUntil(item.expiryDate) : null;
                   const urgentCls = daysLeft !== null && daysLeft <= 7
                     ? 'text-rose-700 font-semibold'
                     : 'text-orange-700';

@@ -45,17 +45,18 @@ function payloadSummary(topic: string, payload: Record<string, unknown>): string
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true because we always fetch on mount; this avoids a synchronous
+  // setLoading(true) inside the mount effect (react-hooks/set-state-in-effect).
+  const [loading, setLoading] = useState(true);
   const [marking, setMarking] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter((n) => !n.readAt).length;
 
   const fetch_ = useCallback(async () => {
-    setLoading(true);
     try {
       const res = await fetch('/api/v1/notifications');
-      if (res.ok) setNotifications(await res.json() as Notification[]);
+      if (res.ok) setNotifications((await res.json()) as Notification[]);
     } finally {
       setLoading(false);
     }

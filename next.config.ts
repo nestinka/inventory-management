@@ -6,17 +6,8 @@ const config: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: {
-    typedRoutes: true,
-  },
+  typedRoutes: true,
   serverExternalPackages: ['@prisma/client', 'bcryptjs', 'pino', 'nodemailer', 'node-cron'],
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  webpack(config: any) {
-    // Ensure Node-only packages are never bundled for any target
-    const existing = Array.isArray(config.externals) ? config.externals : config.externals ? [config.externals] : [];
-    config.externals = [...existing, 'nodemailer', 'node-cron'];
-    return config;
-  },
   async headers() {
     return [
       {

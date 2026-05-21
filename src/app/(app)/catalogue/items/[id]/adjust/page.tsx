@@ -8,7 +8,7 @@ import { getItem, getItemHistory } from '@/server/modules/items';
 import { StockBadge } from '@/components/ui/stock-badge';
 import { Tooltip } from '@/components/ui/tooltip';
 import { StockAdjuster } from '@/components/inventory/stock-adjuster';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate, formatDateTime, isWithinDays } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +31,7 @@ export default async function AdjustStockPage({ params }: { params: Promise<{ id
 
   if (!item) notFound();
 
-  const nearExpiryMs = 30 * 24 * 60 * 60 * 1000;
-  const isNearExpiry = item.expiryDate != null && new Date(item.expiryDate).getTime() < Date.now() + nearExpiryMs;
+  const isNearExpiry = isWithinDays(item.expiryDate, 30);
 
   return (
     <div className="space-y-6">

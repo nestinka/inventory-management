@@ -35,6 +35,7 @@ interface AuditLogWithActor {
   action: string;
   targetType: string;
   targetId: string | null;
+  targetName?: string | null;
   diff: Prisma.JsonValue | null;
   ip: string | null;
   userAgent: string | null;
@@ -100,9 +101,13 @@ export function AuditTable({ logs }: AuditTableProps) {
                     </td>
                     <td className="hidden px-4 py-3 md:table-cell">
                       <p className="text-sm text-foreground">{describeAction(log.action)}</p>
-                      <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                        {log.targetType}
-                        {log.targetId ? ` · ${log.targetId.slice(0, 8)}` : ''}
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        <span className="font-mono">{log.targetType}</span>
+                        {log.targetName ? (
+                          <> · {log.targetName}</>
+                        ) : log.targetId ? (
+                          <span className="font-mono"> · {log.targetId.slice(0, 8)}</span>
+                        ) : null}
                       </p>
                     </td>
                     <td className="px-4 py-3 text-center">

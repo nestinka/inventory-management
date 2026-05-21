@@ -15,6 +15,7 @@ coverage
 playwright-report
 test-results
 playwright/.cache
+tests/helpers/.test-db-url
 
 # next.js
 .next
@@ -23,6 +24,8 @@ build
 dist
 
 # misc
+/dev-out.log
+/dev-err.log
 .DS_Store
 *.pem
 .turbo

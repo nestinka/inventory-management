@@ -43,8 +43,8 @@ Optimised for two operating modes:
 
 ### 3.4 Requests & approvals
 - Editors submit requests: one or more line items with `requestedQty`.
-- Admins approve / reject. On approve, they set `approvedQty` (≤ requested).
-- Admin (or Editor with admin's permission) marks fulfilment: `fulfilledQty` (≤ approved) — stock decrements at fulfilment time, not approval.
+- Admins and editors approve / reject. On approve, they set `approvedQty` (≤ requested).
+- Fulfilment is admin-only: an admin marks `fulfilledQty` (≤ approved) — stock decrements at fulfilment time, not approval.
 - Status machine: `PENDING → APPROVED | REJECTED`; `APPROVED → FULFILLED | CANCELLED`.
 - Full timestamp history per status transition.
 

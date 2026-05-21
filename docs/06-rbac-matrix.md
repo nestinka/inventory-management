@@ -21,20 +21,21 @@ Legend: ✅ allowed · ⚠ own-only · ❌ forbidden
 | Create / update / delete | ✅ | ❌ | ❌ |
 | **Items** | | | |
 | List / view / history | ✅ | ✅ | ✅ |
-| Create / update / delete | ✅ | ❌ | ❌ |
+| Create | ✅ | ✅ | ❌ |
+| Update / delete | ✅ | ❌ | ❌ |
 | **Stock adjustments** | | | |
 | Adjust (+/-, with reason) | ✅ | ✅ | ❌ |
 | View adjustment history | ✅ | ✅ | ✅ |
 | **Requests** | | | |
-| Create request | ✅ | ✅ | ❌ |
-| View all requests | ✅ | ❌ | ✅ |
-| View own request | ✅ | ⚠ own-only | ⚠ (n/a — no requests) |
-| Cancel request | ⚠ any | ⚠ own & PENDING | ❌ |
-| Approve / reject | ✅ | ❌ | ❌ |
+| Create request | ✅ | ✅ | ✅ |
+| View all requests | ✅ | ✅ | ❌ |
+| View own request | ✅ | ✅ | ✅ |
+| Cancel request | ⚠ any | ⚠ own & PENDING | ⚠ own & PENDING |
+| Approve / reject | ✅ | ✅ | ❌ |
 | Fulfil | ✅ | ❌ | ❌ |
 | **Audit log** | | | |
-| View / filter | ✅ | ❌ | ✅ |
-| Export | ✅ | ❌ | ✅ |
+| View / filter | ✅ | ✅ | ❌ |
+| Export | ✅ | ✅ | ❌ |
 | **Reports** | | | |
 | Inventory / low-stock / out-of-stock / near-expiry / consumption | ✅ | ✅ | ✅ |
 | Department-usage / request-analytics | ✅ | ❌ | ✅ |
@@ -84,7 +85,7 @@ export function RoleGate({ role, children }: { role: Role | Role[]; children: Re
 
 ## 6. Policy testing
 
-For each role, a fixture in `tests/integration/rbac.spec.ts` enumerates every endpoint × role combination and asserts the matrix above. New endpoints **must** add a row before merge; CI flags omissions via a coverage assertion (`endpoints.length === policyTable.size`).
+For each role, a fixture in `tests/integration/rbac-matrix.spec.ts` enumerates every endpoint × role combination and asserts the matrix above. New endpoints **must** add a row before merge; CI flags omissions via a coverage assertion.
 
 ## 7. Future extensions
 
