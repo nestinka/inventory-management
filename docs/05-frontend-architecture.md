@@ -4,7 +4,7 @@
 
 | Concern | Choice |
 |---|---|
-| Framework | Next.js 15 (App Router, React 19, RSC by default) |
+| Framework | Next.js 16 (App Router, React 19, RSC by default) |
 | Styling | TailwindCSS 4 + CSS variables for theme |
 | Component primitives | Radix UI + shadcn/ui-style copy-in components |
 | Forms | react-hook-form + zod resolver |

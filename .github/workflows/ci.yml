@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: lint · typecheck · test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Unit/component tests don't touch the DB, but env.ts validates DATABASE_URL
+      # at import time. Integration-setup.ts overrides this with the Testcontainers
+      # URL before any DB call is made.
+      DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+      NEXTAUTH_SECRET: ci-secret-ci-secret-ci-secret-ci-secret-0123456789
+      NEXTAUTH_URL: http://localhost:7000
+      APP_BASE_URL: http://localhost:7000
+      DISABLE_BACKGROUND_JOBS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate
+        run: pnpm prisma generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit
+
+      - name: Component tests
+        run: pnpm test:component
+
+      # Integration tests use Testcontainers to spin up a throwaway Postgres 16
+      # via the Docker daemon that ubuntu-latest provides out of the box.
+      - name: Integration tests
+        run: pnpm test:integration

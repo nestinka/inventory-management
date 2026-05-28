@@ -1,6 +1,6 @@
 # 04 — API Specifications
 
-All endpoints are Next.js Route Handlers under `src/app/api/**`. The full OpenAPI 3.1 contract is generated from zod schemas via `zod-to-openapi` and served at `/api/openapi.json` and `/docs/api` (Swagger UI). What follows is the human-facing summary.
+All endpoints are Next.js Route Handlers under `src/app/api/**`. Each endpoint's input contract is enforced at runtime by a zod DTO in its module's `dto.ts`; the integration gate at `tests/integration/openapi-coverage.spec.ts` fails CI if any write route accepts a body that isn't validated through a DTO. A generated OpenAPI document and Swagger UI are not shipped in v1 (deferred); the per-module specifications below are the human-facing contract.
 
 ## 1. Conventions
 

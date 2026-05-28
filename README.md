@@ -1,6 +1,6 @@
 # Inventory Management System
 
-Production-grade IT inventory management — Next.js 15, Prisma, PostgreSQL 16, TailwindCSS.
+Production-grade IT inventory management — Next.js 16, Prisma, PostgreSQL 16, TailwindCSS.
 
 ## Quick start
 

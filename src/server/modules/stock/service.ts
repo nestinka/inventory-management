@@ -8,11 +8,27 @@ import type { AdjustStockInput, ListAdjustmentsInput } from './dto';
 
 export async function adjust(input: AdjustStockInput, actor: Actor, ctx?: AuditContext) {
   return prisma.$transaction(async (tx) => {
-    // Row-level lock prevents concurrent under-zero issues
-    const item = await tx.item.findFirst({
-      where: { id: input.itemId, deletedAt: null },
-    });
-    if (!item) throw new ApiError('NOT_FOUND', 404, `Item ${input.itemId} not found`);
+    // SELECT ... FOR UPDATE serialises concurrent adjusts on the same item.
+    // Without the row lock, two transactions can both read the same balance,
+    // both pass the >= 0 check, and write inconsistent balanceAfter values.
+    const rows = await tx.$queryRaw<Array<{
+      id: string;
+      name: string;
+      current_stock: number;
+      reorder_threshold: number;
+      deleted_at: Date | null;
+    }>>`SELECT id, name, current_stock, reorder_threshold, deleted_at
+        FROM items
+        WHERE id = ${input.itemId}::uuid
+        FOR UPDATE`;
+    const row = rows[0];
+    if (!row || row.deleted_at) throw new ApiError('NOT_FOUND', 404, `Item ${input.itemId} not found`);
+    const item = {
+      id: row.id,
+      name: row.name,
+      currentStock: Number(row.current_stock),
+      reorderThreshold: Number(row.reorder_threshold),
+    };
 
     const newStock = Math.round((item.currentStock + input.delta) * 100) / 100;
     if (newStock < 0) {
@@ -23,7 +39,10 @@ export async function adjust(input: AdjustStockInput, actor: Actor, ctx?: AuditC
       );
     }
 
-    await tx.item.update({ where: { id: item.id }, data: { currentStock: newStock } });
+    const updatedItem = await tx.item.update({
+      where: { id: item.id },
+      data: { currentStock: newStock },
+    });
 
     const adjustment = await tx.stockAdjustment.create({
       data: {
@@ -63,7 +82,7 @@ export async function adjust(input: AdjustStockInput, actor: Actor, ctx?: AuditC
       });
     }
 
-    return { item: { ...item, currentStock: newStock }, adjustment };
+    return { item: updatedItem, adjustment };
   });
 }
 

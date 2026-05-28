@@ -44,8 +44,6 @@ Legend: ✅ allowed · ⚠ own-only · ❌ forbidden
 | View / edit own profile | ✅ | ✅ | ✅ |
 | **Notifications** | | | |
 | View own / mark read | ✅ | ✅ | ✅ |
-| **System** | | | |
-| API docs (`/docs/api`) | ✅ | ❌ | ❌ |
 
 ## 3. Enforcement layers
 

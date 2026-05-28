@@ -25,12 +25,16 @@ pnpm db:seed           # seed (idempotent)
 
 ## Module structure
 
-Each module under `src/server/modules/<name>/` has:
-- `domain.ts` — pure types and value objects
+Every module under `src/server/modules/<name>/` ships at minimum:
 - `dto.ts` — zod schemas for I/O
-- `repo.ts` — Prisma access (DB writes only here)
-- `service.ts` — business logic, events, audit
+- `service.ts` — business logic, events, audit (DB calls inline by default)
 - `index.ts` — public barrel (only this is importable by API routes)
+
+Two optional files exist when a module's complexity earns them:
+- `domain.ts` — pure types and value objects beyond what `@prisma/client` exposes (e.g., `deriveStockState` in the items module)
+- `repo.ts` — extracted only when more than one service file would otherwise touch the DB, or when the queries are large enough to deserve their own file
+
+`categories`, `items`, and `users` use the full five-file layout; `audit`, `auth`, `notifications`, `reports`, `requests`, and `stock` keep their DB calls inline in `service.ts`. The barrel-import rule below applies in both cases.
 
 ## Testing expectations
 

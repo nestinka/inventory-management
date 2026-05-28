@@ -2,13 +2,13 @@
 
 This is the work queue. Each task is self-contained — a coding agent can pick one up cold, given this repo, and produce a PR. Tasks reference the design docs (01–12) for context.
 
-## Status (as of 2026-05-19)
-- Phase 0 ✅ Foundations — Complete
+## Status (as of 2026-05-29)
+- Phase 0 ✅ Foundations — Complete (T0.7 CI workflow added 2026-05-29)
 - Phase 1 ✅ Catalogue — Complete
-- Phase 2 ✅ Inventory & stock adjustments — Complete
-- Phase 3 ✅ Requests & approvals — Complete
-- Phase 4 ✅ Notifications — Complete
-- Phase 5 ✅ Reporting & audit explorer — Complete
+- Phase 2 ✅ Inventory & stock adjustments — Complete (T2.1 row-lock + concurrency test added 2026-05-29)
+- Phase 3 ✅ Requests & approvals — Complete (fulfilment row-lock + out-of-stock topic added 2026-05-29)
+- Phase 4 ✅ Notifications — Complete (scanner topic split + integration tests added 2026-05-29)
+- Phase 5 ✅ Reporting & audit explorer — Complete (reports integration tests added 2026-05-29)
 - Phase 6 ✅ Hardening — Complete (T6.4 deferred pending external pen-test)
 
 ---

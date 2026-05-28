@@ -248,8 +248,26 @@ export async function fulfilRequest(id: string, input: FulfilRequestInput, actor
       if (l.fulfilledQty > 0) {
         if (!line.itemId)
           throw new ApiError('VALIDATION_FAILED', 422, `Line ${l.lineId} has no catalogue item to fulfil`);
-        const item = await tx.item.findFirst({ where: { id: line.itemId, deletedAt: null } });
-        if (!item) throw new ApiError('NOT_FOUND', 404, `Item ${line.itemId} not found`);
+        // SELECT ... FOR UPDATE serialises concurrent stock mutations on the
+        // same item (fulfilment, adjust, or other concurrent fulfilment).
+        const rows = await tx.$queryRaw<Array<{
+          id: string;
+          name: string;
+          current_stock: number;
+          reorder_threshold: number;
+          deleted_at: Date | null;
+        }>>`SELECT id, name, current_stock, reorder_threshold, deleted_at
+            FROM items
+            WHERE id = ${line.itemId}::uuid
+            FOR UPDATE`;
+        const row = rows[0];
+        if (!row || row.deleted_at) throw new ApiError('NOT_FOUND', 404, `Item ${line.itemId} not found`);
+        const item = {
+          id: row.id,
+          name: row.name,
+          currentStock: Number(row.current_stock),
+          reorderThreshold: Number(row.reorder_threshold),
+        };
 
         const newStock = item.currentStock - l.fulfilledQty;
         if (newStock < 0) throw new ApiError('STOCK_BELOW_ZERO', 409, `Insufficient stock for item ${item.name}`);
@@ -262,7 +280,13 @@ export async function fulfilRequest(id: string, input: FulfilRequestInput, actor
           },
         });
 
-        if (newStock < item.reorderThreshold) {
+        // Mirror stockService.adjust: out-of-stock takes priority over low-stock.
+        if (newStock === 0) {
+          await eventBus.emit(tx, 'item.outOfStock', {
+            itemId: item.id, name: item.name,
+            currentStock: 0, threshold: item.reorderThreshold,
+          });
+        } else if (newStock < item.reorderThreshold) {
           await eventBus.emit(tx, 'item.lowStock', {
             itemId: item.id, name: item.name,
             currentStock: newStock, threshold: item.reorderThreshold,

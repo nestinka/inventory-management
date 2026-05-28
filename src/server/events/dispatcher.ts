@@ -8,7 +8,7 @@ const MAX_ATTEMPTS = 10;
 
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-async function poll(): Promise<void> {
+export async function poll(): Promise<void> {
   const now = new Date();
   const rows = await prisma.eventOutbox.findMany({
     where: {

@@ -4,7 +4,7 @@
 
 **Modular monolith, API-first, clean-architecture-lite.**
 
-Single Next.js 15 deployable; internally divided into bounded modules that communicate only through their public services. A future extraction to microservices is possible by lifting any one `src/server/modules/*` directory behind an HTTP boundary without rewriting consumers.
+Single Next.js 16 deployable; internally divided into bounded modules that communicate only through their public services. A future extraction to microservices is possible by lifting any one `src/server/modules/*` directory behind an HTTP boundary without rewriting consumers.
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -49,18 +49,21 @@ src/
 ├── components/                ← React UI components (presentation)
 ├── server/
 │   ├── modules/<name>/
-│   │   ├── domain.ts          ← Pure types, enums, value objects
-│   │   ├── repo.ts            ← Prisma access (only place modules touch the DB)
-│   │   ├── service.ts         ← Use cases; orchestrates repo + events
-│   │   ├── dto.ts             ← zod schemas / inferred types for I/O
-│   │   └── index.ts           ← Public barrel — the ONLY allowed import surface
+│   │   ├── service.ts         ← Required. Business logic; DB calls inline by default.
+│   │   ├── dto.ts             ← Required. Zod schemas / inferred types for I/O.
+│   │   ├── index.ts           ← Required. Public barrel — the ONLY allowed import surface.
+│   │   ├── domain.ts          ← Optional. Pure types / value objects beyond the Prisma types.
+│   │   └── repo.ts            ← Optional. Lifted from service.ts when DB queries grow large.
 │   ├── auth/                  ← NextAuth options, session helpers, RBAC
 │   ├── events/                ← Bus, subscriber registry
-│   ├── lib/                   ← Cross-cutting: logger, errors, rate-limit, mail
+│   ├── jobs/                  ← node-cron scanners (low-stock, near-expiry)
+│   ├── lib/                   ← Cross-cutting: logger, errors, rate-limit, mail, audit, route helper
 │   └── db/                    ← Prisma client singleton
 ├── lib/                       ← Client-safe helpers (no `server-only` imports)
-└── types/                     ← Shared global TS types
+└── env.ts                     ← Zod-validated environment
 ```
+
+`categories`, `items`, and `users` use the full five-file layout (their domain types extend the Prisma types and the queries are large enough to extract). The other six modules (`audit`, `auth`, `notifications`, `reports`, `requests`, `stock`) keep DB calls inline in `service.ts` and rely on the Prisma-generated types directly. Either form is canonical; the barrel-import rule below applies to both.
 
 ### Hard rules
 - `app/api/**` may import only from `server/modules/<name>` (the barrel) and `server/lib`.

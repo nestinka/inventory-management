@@ -34,22 +34,29 @@ export async function runLowStockScan(): Promise<void> {
       AND current_stock <= reorder_threshold
   `;
 
-  let emitted = 0;
+  let lowEmitted = 0;
+  let outEmitted = 0;
   for (const item of items) {
-    const key = `lowStock:${item.id}`;
+    // Match stockService.adjust: stock=0 fires item.outOfStock; non-zero below
+    // threshold fires item.lowStock. Distinct dedup keys so a transition
+    // between the two states isn't suppressed by the wrong key.
+    const isOut = Number(item.current_stock) <= 0;
+    const topic = isOut ? 'item.outOfStock' : 'item.lowStock';
+    const key = `${isOut ? 'outOfStock' : 'lowStock'}:${item.id}`;
     if (await wasRecentlyEmitted(key)) continue;
     await prisma.$transaction(async (tx) => {
-      await eventBus.emit(tx, 'item.lowStock', {
+      await eventBus.emit(tx, topic, {
         itemId: item.id,
         name: item.name,
-        currentStock: item.current_stock,
-        threshold: item.reorder_threshold,
+        currentStock: Number(item.current_stock),
+        threshold: Number(item.reorder_threshold),
       });
     });
     await recordEmitted(key);
-    emitted++;
+    if (isOut) outEmitted++;
+    else lowEmitted++;
   }
-  logger.info({ emitted, total: items.length }, 'scanner.lowStock: done');
+  logger.info({ lowEmitted, outEmitted, total: items.length }, 'scanner.lowStock: done');
 }
 
 export async function runNearExpiryScan(): Promise<void> {
