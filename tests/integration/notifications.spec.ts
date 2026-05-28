@@ -1,15 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-// Spy on mail before the subscriber loads so EmailSubscriber picks up the mock.
-// vi.mock is hoisted above all imports; use vi.hoisted so the spy is hoisted
-// too and the factory can reference it without the "no top-level variables"
-// error.
-type MailArgs = { to: string; subject: string; text?: string; html?: string };
-const { sendMail } = vi.hoisted(() => ({
-  sendMail: vi.fn<(args: MailArgs) => Promise<void>>(async () => undefined),
-}));
-vi.mock('@/server/lib/mail', () => ({ sendMail }));
+// Replace mail BEFORE EmailSubscriber loads. The factory cannot reference any
+// outer binding (TDZ during hoisted execution); install a plain vi.fn() and
+// reach back for it via vi.mocked(sendMail) after imports settle.
+vi.mock('@/server/lib/mail', () => ({ sendMail: vi.fn() }));
 
+import { sendMail } from '@/server/lib/mail';
 import { prisma, resetDatabase } from '../helpers/db';
 import { TestFactory } from '../helpers/factories';
 import { eventBus } from '@/server/events/bus';
@@ -17,13 +13,18 @@ import { poll } from '@/server/events/dispatcher';
 import { InboxSubscriber, EmailSubscriber } from '@/server/modules/notifications';
 import { runLowStockScan } from '@/server/jobs/scanners';
 
+type MailArgs = { to: string; subject: string; text?: string; html?: string };
+const mailSpy = vi.mocked(sendMail) as unknown as ReturnType<
+  typeof vi.fn<(args: MailArgs) => Promise<void>>
+>;
+
 let admin1: { id: string; email: string };
 let admin2: { id: string; email: string };
 let categoryId: string;
 
 beforeEach(async () => {
   await resetDatabase();
-  sendMail.mockClear();
+  mailSpy.mockClear();
   // Reset bus subscribers so suites don't double-dispatch.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (eventBus as any).subscribers = [];
@@ -63,13 +64,13 @@ describe('event dispatcher poll', () => {
     const notifs = await prisma.notification.findMany({ where: { topic: 'item.lowStock' } });
     expect(notifs.map((n) => n.userId).sort()).toEqual([admin1.id, admin2.id].sort());
 
-    expect(sendMail).toHaveBeenCalledTimes(2);
-    const subjects = sendMail.mock.calls.map((c) => c[0].subject);
+    expect(mailSpy).toHaveBeenCalledTimes(2);
+    const subjects = mailSpy.mock.calls.map((c) => c[0].subject);
     expect(subjects).toEqual([
       '[Inventory] Low Stock Alert',
       '[Inventory] Low Stock Alert',
     ]);
-    const recipients = sendMail.mock.calls.map((c) => c[0].to).sort();
+    const recipients = mailSpy.mock.calls.map((c) => c[0].to).sort();
     expect(recipients).toEqual([admin1.email, admin2.email].sort());
   });
 
@@ -85,8 +86,8 @@ describe('event dispatcher poll', () => {
 
     await poll();
 
-    expect(sendMail).toHaveBeenCalled();
-    const subject = sendMail.mock.calls[0]![0].subject;
+    expect(mailSpy).toHaveBeenCalled();
+    const subject = mailSpy.mock.calls[0]![0].subject;
     expect(subject).toBe('[Inventory] ⚠️ Out of Stock');
   });
 });
