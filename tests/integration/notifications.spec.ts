@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Spy on mail before the subscriber loads so EmailSubscriber picks up the mock.
+// vi.mock is hoisted above all imports; use vi.hoisted so the spy is hoisted
+// too and the factory can reference it without the "no top-level variables"
+// error.
 type MailArgs = { to: string; subject: string; text?: string; html?: string };
-const sendMail = vi.fn<(args: MailArgs) => Promise<void>>(async () => undefined);
+const { sendMail } = vi.hoisted(() => ({
+  sendMail: vi.fn<(args: MailArgs) => Promise<void>>(async () => undefined),
+}));
 vi.mock('@/server/lib/mail', () => ({ sendMail }));
 
 import { prisma, resetDatabase } from '../helpers/db';
