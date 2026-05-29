@@ -63,7 +63,7 @@ src/
 └── env.ts                     ← Zod-validated environment
 ```
 
-`categories`, `items`, and `users` use the full five-file layout (their domain types extend the Prisma types and the queries are large enough to extract). The other six modules (`audit`, `auth`, `notifications`, `reports`, `requests`, `stock`) keep DB calls inline in `service.ts` and rely on the Prisma-generated types directly. Either form is canonical; the barrel-import rule below applies to both.
+`categories`, `items`, and `users` use the full five-file layout (their domain types extend the Prisma types and the queries are large enough to extract). The other seven modules (`audit`, `auth`, `notifications`, `reports`, `requests`, `settings`, `stock`) keep DB calls inline in `service.ts` and rely on the Prisma-generated types directly. Either form is canonical; the barrel-import rule below applies to both.
 
 ### Hard rules
 - `app/api/**` may import only from `server/modules/<name>` (the barrel) and `server/lib`.

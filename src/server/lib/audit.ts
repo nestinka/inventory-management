@@ -6,7 +6,14 @@ export type AuditContext = {
   requestId?: string;
 };
 
-const REDACTED_KEYS = new Set(['password', 'passwordHash', 'token', 'secret', 'apiKey']);
+const REDACTED_KEYS = new Set([
+  'password',
+  'passwordHash',
+  'token',
+  'secret',
+  'apiKey',
+  'smtpPassword',
+]);
 
 export function sanitizeDiff(obj: unknown): unknown {
   if (obj === null || typeof obj !== 'object') return obj;

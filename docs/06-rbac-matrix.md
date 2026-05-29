@@ -44,6 +44,8 @@ Legend: ✅ allowed · ⚠ own-only · ❌ forbidden
 | View / edit own profile | ✅ | ✅ | ✅ |
 | **Notifications** | | | |
 | View own / mark read | ✅ | ✅ | ✅ |
+| **Settings** | | | |
+| View / update SMTP + alert recipients | ✅ | ❌ | ❌ |
 
 ## 3. Enforcement layers
 

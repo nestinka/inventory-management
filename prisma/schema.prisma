@@ -71,6 +71,7 @@ model User {
   notifications       Notification[]
   itemsCreated        Item[]
   passwordResetTokens PasswordResetToken[]
+  settingsUpdated     NotificationSettings[]
 
   @@index([role])
   @@index([deletedAt])
@@ -282,6 +283,29 @@ model PasswordResetToken {
 
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+// ─── Notification settings (singleton row, id = 'default') ──────────────────
+//
+// Admin-editable replacement for the SMTP_* env vars and the hard-coded
+// "all admins" recipient rule in the email subscriber. The row is seeded
+// from env on first read; after that the DB is authoritative.
+
+model NotificationSettings {
+  id              String   @id @default("default")
+  smtpHost        String   @map("smtp_host")
+  smtpPort        Int      @map("smtp_port")
+  smtpSecure      Boolean  @default(false) @map("smtp_secure")
+  smtpUser        String?  @map("smtp_user")
+  smtpPassword    String?  @map("smtp_password") // plaintext for v1; encryption deferred to v1.2
+  mailFrom        String   @map("mail_from")
+  alertRecipients Json     @default("[]") @map("alert_recipients") // string[]
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  updatedById     String?  @map("updated_by_id") @db.Uuid
+
+  updatedBy User? @relation(fields: [updatedById], references: [id])
+
+  @@map("notification_settings")
 }
 
 // ─── Idempotency keys ────────────────────────────────────────────────────────

@@ -34,7 +34,7 @@ Two optional files exist when a module's complexity earns them:
 - `domain.ts` — pure types and value objects beyond what `@prisma/client` exposes (e.g., `deriveStockState` in the items module)
 - `repo.ts` — extracted only when more than one service file would otherwise touch the DB, or when the queries are large enough to deserve their own file
 
-`categories`, `items`, and `users` use the full five-file layout; `audit`, `auth`, `notifications`, `reports`, `requests`, and `stock` keep their DB calls inline in `service.ts`. The barrel-import rule below applies in both cases.
+`categories`, `items`, and `users` use the full five-file layout; `audit`, `auth`, `notifications`, `reports`, `requests`, `settings`, and `stock` keep their DB calls inline in `service.ts`. The barrel-import rule below applies in both cases.
 
 ## Testing expectations
 

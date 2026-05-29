@@ -35,6 +35,21 @@ beforeEach(async () => {
   admin1 = await f.createUser({ role: 'ADMIN', name: 'Admin One', email: `admin1-${Date.now()}@test.local` });
   admin2 = await f.createUser({ role: 'ADMIN', name: 'Admin Two', email: `admin2-${Date.now()}@test.local` });
   categoryId = (await f.createCategory()).id;
+
+  // EmailSubscriber for inventory alerts now reads recipients from the
+  // settings row. Seed it with both admin emails so the existing assertions
+  // (recipients should equal both admins) keep their shape.
+  await prisma.notificationSettings.upsert({
+    where: { id: 'default' },
+    create: {
+      id: 'default',
+      smtpHost: 'localhost', smtpPort: 1025, smtpSecure: false,
+      smtpUser: null, smtpPassword: null,
+      mailFrom: 'test@inventory.local',
+      alertRecipients: [admin1.email, admin2.email],
+    },
+    update: { alertRecipients: [admin1.email, admin2.email] },
+  });
 });
 
 // ───────────────────────────────────────────────────────────────────────────────

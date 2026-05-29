@@ -3,6 +3,7 @@ import type { Subscriber } from '@/server/events/types';
 import type { DomainEvent } from '@/server/events/types';
 import { sendMail } from '@/server/lib/mail';
 import { logger } from '@/server/lib/logger';
+import { getAlertRecipients } from '@/server/modules/settings';
 
 // ─── Payload shapes ───────────────────────────────────────────────────────────
 
@@ -77,14 +78,15 @@ export class EmailSubscriber implements Subscriber {
         event.topic === 'item.outOfStock' ||
         event.topic === 'item.nearExpiry'
       ) {
-        // Inventory alerts → all admins
-        const admins = await prisma.user.findMany({
-          where: { role: 'ADMIN', isActive: true, deletedAt: null },
-          select: { email: true, name: true },
-        });
+        // Inventory alerts → the recipient list configured via /settings.
+        const recipients = await getAlertRecipients();
+        if (recipients.length === 0) {
+          logger.info({ topic: event.topic }, 'inventory alert skipped — no recipients configured');
+          return;
+        }
         const { subject, html, text } = buildEmail(event);
-        for (const admin of admins) {
-          await sendMail({ to: admin.email, subject, html, text });
+        for (const to of recipients) {
+          await sendMail({ to, subject, html, text });
         }
       } else if (
         event.topic === 'request.approved' ||

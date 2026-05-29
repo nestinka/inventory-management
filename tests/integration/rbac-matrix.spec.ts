@@ -29,6 +29,10 @@ import { POST as reqFulfil } from '@/app/api/v1/requests/[id]/fulfil/route';
 import { POST as reqCancel } from '@/app/api/v1/requests/[id]/cancel/route';
 import { GET as userList, POST as userCreate } from '@/app/api/v1/users/route';
 import { GET as auditList } from '@/app/api/v1/audit-logs/route';
+import {
+  GET as settingsGet,
+  PUT as settingsPut,
+} from '@/app/api/v1/settings/notifications/route';
 import { resetDatabase } from '../helpers/db';
 import { makeRequest, type HttpMethod } from '../helpers/http';
 
@@ -90,6 +94,9 @@ const endpoints: Endpoint[] = [
 
   // docs/06 originally said VIEWER (not EDITOR); code allows ADMIN + EDITOR.
   { label: 'GET /audit-logs', method: 'GET', url: '/api/v1/audit-logs', invoke: auditList, allow: ['ADMIN', 'EDITOR'] },
+
+  { label: 'GET /settings/notifications', method: 'GET', url: '/api/v1/settings/notifications', invoke: settingsGet, allow: ['ADMIN'] },
+  { label: 'PUT /settings/notifications', method: 'PUT', url: '/api/v1/settings/notifications', invoke: settingsPut, allow: ['ADMIN'] },
 ];
 
 const BASE = 'http://localhost:7000';

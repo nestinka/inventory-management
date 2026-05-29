@@ -42,6 +42,8 @@ const EXPECTED_AUDIT_ACTIONS = [
   'user.update',
   'user.delete',
   'user.password_reset',
+  // settings
+  'settings.update',
 ] as const;
 
 type AuditAction = (typeof EXPECTED_AUDIT_ACTIONS)[number];
@@ -120,6 +122,7 @@ describe('audit action coverage', () => {
       'category',
       'item',
       'request',
+      'settings',
       'stock',
       'user',
     ]);
