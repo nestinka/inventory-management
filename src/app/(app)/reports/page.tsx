@@ -31,7 +31,7 @@ const REPORTS = [
   },
   {
     title: 'Stock Movements',
-    description: 'All additions and removals within a date range, with net movement summary',
+    description: 'All additions and removals with net movement summary',
     href: '/reports/stock-movements',
     icon: ArrowLeftRight,
   },
@@ -43,7 +43,7 @@ const REPORTS = [
   },
   {
     title: 'Request Summary',
-    description: 'All requests in a date range with quantities, status, and approver detail',
+    description: 'All requests with quantities, status, and approver detail',
     href: '/reports/request-summary',
     icon: ClipboardList,
   },
