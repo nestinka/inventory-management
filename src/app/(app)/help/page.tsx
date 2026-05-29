@@ -251,18 +251,18 @@ export default async function HelpPage() {
 
         <Section id="reports" title="Reports">
           <p>
-            Every report is filterable and exportable as CSV — useful for audit and finance
-            handoffs.
+            Every report supports date-range filtering and a CSV export — useful for audit
+            and finance handoffs.
           </p>
           <ul className="list-disc space-y-1 pl-5 text-sm">
-            <li><strong>Inventory snapshot</strong> — full active catalogue with current stock and derived state.</li>
-            <li><strong>Low stock</strong> — everything below threshold, split into LOW and OUT.</li>
-            <li><strong>Near expiry</strong> — items expiring inside a window (default 30 days).</li>
-            <li><strong>Consumption</strong> — outbound adjustments grouped by date and reason.</li>
-            <li><strong>Stock movements</strong> — all adjustments (IN and OUT) with running totals.</li>
-            <li><strong>Monthly usage</strong> — per-item consumption per month with top-items summary.</li>
-            <li><strong>Request analytics</strong> — counts by status, average approval time, fulfilment rate.</li>
-            <li><strong>Request summary</strong> — every request with totals across its lines.</li>
+            <li><strong>Current Inventory</strong> — full snapshot of all active items and stock levels.</li>
+            <li><strong>Low Stock</strong> — items at or below their reorder threshold.</li>
+            <li><strong>Consumption Trends</strong> — stock adjustments over time by reason and actor.</li>
+            <li><strong>Near Expiry</strong> — items expiring within a configurable window.</li>
+            <li><strong>Stock Movements</strong> — all additions and removals with net movement summary.</li>
+            <li><strong>Monthly Usage</strong> — item consumption patterns grouped by month with top-item rankings.</li>
+            <li><strong>Request Summary</strong> — all requests with quantities, status, and approver detail.</li>
+            <li><strong>Request Analytics</strong> — approval rates, response times, and fulfilment volumes.</li>
           </ul>
         </Section>
 
