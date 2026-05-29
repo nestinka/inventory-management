@@ -267,7 +267,10 @@ export function SettingsForm({ initial }: { initial: Initial }) {
           {submitting ? 'Saving…' : 'Save settings'}
         </button>
         {initial.updatedAt && (
-          <p className="text-xs text-muted-foreground">
+          // toLocaleString uses the local locale; differs between server (system)
+          // and client (browser). suppressHydrationWarning is the canonical fix
+          // for locale-formatted timestamps.
+          <p className="text-xs text-muted-foreground" suppressHydrationWarning>
             Last updated {new Date(initial.updatedAt).toLocaleString()}
           </p>
         )}

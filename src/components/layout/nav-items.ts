@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Package, Zap, Tag, Layers, FileText, ClipboardList, Users, BarChart3, Bell, Settings,
+  LayoutDashboard, Package, Zap, Tag, Layers, FileText, ClipboardList, Users, BarChart3, Bell, Settings, HelpCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -22,4 +22,5 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Reports',     href: '/reports',                   icon: BarChart3,    roles: ['ADMIN', 'EDITOR'] },
   { label: 'Users',       href: '/users',                     icon: Users,       roles: ['ADMIN'] },
   { label: 'Settings',    href: '/settings',                  icon: Settings,    roles: ['ADMIN'] },
+  { label: 'Help',        href: '/help',                      icon: HelpCircle },
 ];

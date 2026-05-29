@@ -59,3 +59,4 @@ prisma/migrations/dev.db*
 # claude code local files
 .claude/
 .playwright-mcp/
+.tmp/
