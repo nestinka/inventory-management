@@ -10,16 +10,8 @@ CREATE TYPE "AdjustmentReason" AS ENUM ('DAMAGE', 'EXPIRY', 'AUDIT_CORRECTION', 
 -- CreateEnum
 CREATE TYPE "RequestStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'FULFILLED', 'CANCELLED');
 
--- CreateTable
-CREATE TABLE "departments" (
-    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
-    "name" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
-
-    CONSTRAINT "departments_pkey" PRIMARY KEY ("id")
-);
+-- CreateEnum
+CREATE TYPE "CategoryStatus" AS ENUM ('ACTIVE', 'INACTIVE');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -28,7 +20,6 @@ CREATE TABLE "users" (
     "name" TEXT NOT NULL,
     "password_hash" TEXT NOT NULL,
     "role" "UserRole" NOT NULL DEFAULT 'VIEWER',
-    "department_id" UUID,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "last_login_at" TIMESTAMP(3),
     "failed_login_count" INTEGER NOT NULL DEFAULT 0,
@@ -45,9 +36,9 @@ CREATE TABLE "categories" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
     "description" TEXT,
+    "status" "CategoryStatus" NOT NULL DEFAULT 'ACTIVE',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
@@ -59,7 +50,7 @@ CREATE TABLE "items" (
     "description" TEXT,
     "unit_of_measure" TEXT NOT NULL,
     "category_id" UUID NOT NULL,
-    "current_stock" INTEGER NOT NULL DEFAULT 0,
+    "current_stock" DOUBLE PRECISION NOT NULL DEFAULT 0,
     "reorder_threshold" INTEGER NOT NULL DEFAULT 0,
     "expiry_date" DATE,
     "status" "ItemStatus" NOT NULL DEFAULT 'ACTIVE',
@@ -75,8 +66,8 @@ CREATE TABLE "items" (
 CREATE TABLE "stock_adjustments" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "item_id" UUID NOT NULL,
-    "delta" INTEGER NOT NULL,
-    "balance_after" INTEGER NOT NULL,
+    "delta" DOUBLE PRECISION NOT NULL,
+    "balance_after" DOUBLE PRECISION NOT NULL,
     "reason" "AdjustmentReason" NOT NULL,
     "note" TEXT,
     "actor_id" UUID NOT NULL,
@@ -90,7 +81,6 @@ CREATE TABLE "stock_adjustments" (
 CREATE TABLE "requests" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "requester_id" UUID NOT NULL,
-    "department_id" UUID,
     "status" "RequestStatus" NOT NULL DEFAULT 'PENDING',
     "reason" TEXT NOT NULL,
     "approver_id" UUID,
@@ -106,10 +96,13 @@ CREATE TABLE "requests" (
 CREATE TABLE "request_lines" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "request_id" UUID NOT NULL,
-    "item_id" UUID NOT NULL,
+    "item_id" UUID,
     "requested_qty" INTEGER NOT NULL,
     "approved_qty" INTEGER,
     "fulfilled_qty" INTEGER NOT NULL DEFAULT 0,
+    "custom_item_name" TEXT,
+    "custom_unit" TEXT,
+    "custom_category_id" UUID,
 
     CONSTRAINT "request_lines_pkey" PRIMARY KEY ("id")
 );
@@ -170,6 +163,42 @@ CREATE TABLE "notifications" (
 );
 
 -- CreateTable
+CREATE TABLE "notification_dedup" (
+    "key" TEXT NOT NULL,
+    "emitted_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "notification_dedup_pkey" PRIMARY KEY ("key")
+);
+
+-- CreateTable
+CREATE TABLE "password_reset_tokens" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "user_id" UUID NOT NULL,
+    "token_hash" TEXT NOT NULL,
+    "expires_at" TIMESTAMP(3) NOT NULL,
+    "used" BOOLEAN NOT NULL DEFAULT false,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "password_reset_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "notification_settings" (
+    "id" TEXT NOT NULL DEFAULT 'default',
+    "smtp_host" TEXT NOT NULL,
+    "smtp_port" INTEGER NOT NULL,
+    "smtp_secure" BOOLEAN NOT NULL DEFAULT false,
+    "smtp_user" TEXT,
+    "smtp_password" TEXT,
+    "mail_from" TEXT NOT NULL,
+    "alert_recipients" JSONB NOT NULL DEFAULT '[]',
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_by_id" UUID,
+
+    CONSTRAINT "notification_settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "idempotency_keys" (
     "key" TEXT NOT NULL,
     "status_code" INTEGER NOT NULL,
@@ -179,12 +208,6 @@ CREATE TABLE "idempotency_keys" (
 
     CONSTRAINT "idempotency_keys_pkey" PRIMARY KEY ("key")
 );
-
--- CreateIndex
-CREATE UNIQUE INDEX "departments_name_key" ON "departments"("name");
-
--- CreateIndex
-CREATE INDEX "departments_deleted_at_idx" ON "departments"("deleted_at");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
@@ -199,7 +222,7 @@ CREATE INDEX "users_deleted_at_idx" ON "users"("deleted_at");
 CREATE UNIQUE INDEX "categories_name_key" ON "categories"("name");
 
 -- CreateIndex
-CREATE INDEX "categories_deleted_at_idx" ON "categories"("deleted_at");
+CREATE INDEX "categories_status_idx" ON "categories"("status");
 
 -- CreateIndex
 CREATE INDEX "items_category_id_idx" ON "items"("category_id");
@@ -253,10 +276,13 @@ CREATE INDEX "event_outbox_dispatched_at_next_attempt_at_idx" ON "event_outbox"(
 CREATE INDEX "notifications_user_id_created_at_idx" ON "notifications"("user_id", "created_at" DESC);
 
 -- CreateIndex
-CREATE INDEX "idempotency_keys_expires_at_idx" ON "idempotency_keys"("expires_at");
+CREATE UNIQUE INDEX "password_reset_tokens_token_hash_key" ON "password_reset_tokens"("token_hash");
 
--- AddForeignKey
-ALTER TABLE "users" ADD CONSTRAINT "users_department_id_fkey" FOREIGN KEY ("department_id") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "password_reset_tokens_expires_at_idx" ON "password_reset_tokens"("expires_at");
+
+-- CreateIndex
+CREATE INDEX "idempotency_keys_expires_at_idx" ON "idempotency_keys"("expires_at");
 
 -- AddForeignKey
 ALTER TABLE "items" ADD CONSTRAINT "items_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -280,13 +306,13 @@ ALTER TABLE "requests" ADD CONSTRAINT "requests_requester_id_fkey" FOREIGN KEY (
 ALTER TABLE "requests" ADD CONSTRAINT "requests_approver_id_fkey" FOREIGN KEY ("approver_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "requests" ADD CONSTRAINT "requests_department_id_fkey" FOREIGN KEY ("department_id") REFERENCES "departments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "request_lines" ADD CONSTRAINT "request_lines_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "request_lines" ADD CONSTRAINT "request_lines_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "request_lines" ADD CONSTRAINT "request_lines_item_id_fkey" FOREIGN KEY ("item_id") REFERENCES "items"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "request_lines" ADD CONSTRAINT "request_lines_custom_category_id_fkey" FOREIGN KEY ("custom_category_id") REFERENCES "categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "request_status_events" ADD CONSTRAINT "request_status_events_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -299,3 +325,10 @@ ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_actor_id_fkey" FOREIGN KEY (
 
 -- AddForeignKey
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "password_reset_tokens" ADD CONSTRAINT "password_reset_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notification_settings" ADD CONSTRAINT "notification_settings_updated_by_id_fkey" FOREIGN KEY ("updated_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+

@@ -11,7 +11,9 @@ pnpm test:e2e          # playwright e2e
 pnpm typecheck         # tsc --noEmit
 pnpm lint              # eslint
 pnpm db:migrate        # prisma migrate dev
-pnpm db:seed           # seed (idempotent)
+pnpm db:deploy         # prisma migrate deploy (prod / CI)
+pnpm db:seed           # baseline seed: admin + categories (idempotent, safe in prod)
+pnpm db:seed:dev       # dev-only: adds editor/viewer + demo items + sample request
 ```
 
 ## Architecture rules (non-negotiable)
