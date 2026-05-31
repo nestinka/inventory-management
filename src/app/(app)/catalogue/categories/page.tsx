@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { auth } from '@/lib/auth';
-import { listCategories } from '@/server/modules/categories';
+import { listCategories, CATEGORY_SORTABLE_COLUMNS } from '@/server/modules/categories';
 import { CategoryStatusButton } from '@/components/catalogue/category-status-button';
 import { CategoryStatusFilter } from '@/components/catalogue/category-status-filter';
+import { SortableHeader, type SortDir } from '@/components/ui/sortable-header';
 import { formatDate } from '@/lib/utils';
 import type { Actor } from '@/server/auth/rbac';
 import { CategoryStatus } from '@prisma/client';
@@ -16,18 +17,23 @@ export const dynamic = 'force-dynamic';
 export default async function CategoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; sortBy?: string; sortDir?: string }>;
 }) {
   const session = await auth();
   const actor = session?.user as Actor | undefined;
   if (!actor || actor.role !== 'ADMIN') redirect('/');
 
-  const { status } = await searchParams;
-  const statusFilter = Object.values(CategoryStatus).includes(status as CategoryStatus)
-    ? (status as CategoryStatus)
+  const sp = await searchParams;
+  const statusFilter = Object.values(CategoryStatus).includes(sp.status as CategoryStatus)
+    ? (sp.status as CategoryStatus)
     : CategoryStatus.ACTIVE;
 
-  const { data: categories } = await listCategories({ limit: 100, status: statusFilter });
+  const sortBy = (CATEGORY_SORTABLE_COLUMNS as readonly string[]).includes(sp.sortBy ?? '')
+    ? (sp.sortBy as (typeof CATEGORY_SORTABLE_COLUMNS)[number])
+    : 'name';
+  const sortDir: SortDir = sp.sortDir === 'desc' ? 'desc' : 'asc';
+
+  const { data: categories } = await listCategories({ limit: 100, status: statusFilter, sortBy, sortDir });
 
   return (
     <div className="space-y-4">
@@ -53,12 +59,12 @@ export default async function CategoriesPage({
         <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Description</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Created</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+              <tr className="border-b border-border bg-muted/50 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="name" label="Name" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <th className="hidden md:table-cell">Description</th>
+                <SortableHeader column="status" label="Status" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
+                <SortableHeader column="createdAt" label="Created" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
+                <th className="!text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

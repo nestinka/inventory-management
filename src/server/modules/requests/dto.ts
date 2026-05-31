@@ -49,6 +49,11 @@ export const FulfilRequestDto = z.object({
   ),
 });
 
+export const REQUEST_SORTABLE_COLUMNS = [
+  'createdAt', 'status', 'approvedAt', 'fulfilledAt',
+] as const;
+export type RequestSortColumn = (typeof REQUEST_SORTABLE_COLUMNS)[number];
+
 export const ListRequestsDto = z.object({
   status: z.nativeEnum(RequestStatus).optional(),
   requesterId: z.string().uuid().optional(),
@@ -56,6 +61,8 @@ export const ListRequestsDto = z.object({
   to: z.string().datetime().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   cursor: z.string().optional(),
+  sortBy: z.enum(REQUEST_SORTABLE_COLUMNS).optional(),
+  sortDir: z.enum(['asc', 'desc']).optional(),
 });
 
 export type CreateRequestInput = z.infer<typeof CreateRequestDto>;

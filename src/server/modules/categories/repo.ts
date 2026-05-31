@@ -9,9 +9,14 @@ export async function findMany(input: ListCategoriesInput) {
     ...(input.q && { name: { contains: input.q, mode: 'insensitive' as const } }),
   };
 
+  const orderBy = [
+    { [input.sortBy ?? 'name']: input.sortDir ?? 'asc' } as Record<string, 'asc' | 'desc'>,
+    { id: 'asc' as const },
+  ];
+
   const items = await prisma.category.findMany({
     where,
-    orderBy: { name: 'asc' },
+    orderBy,
     take: input.limit + 1,
     ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
   });

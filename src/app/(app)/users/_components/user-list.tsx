@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 import type { UserRole } from '@/server/modules/users';
+import { SortableHeader, type SortDir } from '@/components/ui/sortable-header';
 
 type UserRow = {
   id: string;
@@ -22,6 +23,8 @@ type Props = {
   currentActorId: string;
   initialQ: string;
   initialRole: string;
+  sortBy: string;
+  sortDir: SortDir;
 };
 
 const ROLE_COLORS: Record<UserRole, string> = {
@@ -30,7 +33,7 @@ const ROLE_COLORS: Record<UserRole, string> = {
   VIEWER: 'bg-slate-100 text-slate-600',
 };
 
-export function UserList({ initialUsers, currentActorId, initialQ, initialRole }: Props) {
+export function UserList({ initialUsers, currentActorId, initialQ, initialRole, sortBy, sortDir }: Props) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState(initialQ);
@@ -42,6 +45,9 @@ export function UserList({ initialUsers, currentActorId, initialQ, initialRole }
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (role) params.set('role', role);
+    // Preserve sort across filter changes so the user doesn't lose their column ordering.
+    if (sortBy !== 'name') params.set('sortBy', sortBy);
+    if (sortDir !== 'asc') params.set('sortDir', sortDir);
     startTransition(() => {
       router.push(`/users?${params.toString()}`);
     });
@@ -131,13 +137,13 @@ export function UserList({ initialUsers, currentActorId, initialQ, initialRole }
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Email</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Role</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden lg:table-cell">Last login</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+              <tr className="border-b border-border bg-muted/50 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="name" label="Name" currentSort={sortBy} currentDir={sortDir} searchParams={{ q: initialQ, role: initialRole }} />
+                <SortableHeader column="email" label="Email" currentSort={sortBy} currentDir={sortDir} searchParams={{ q: initialQ, role: initialRole }} className="hidden md:table-cell" />
+                <SortableHeader column="role" label="Role" currentSort={sortBy} currentDir={sortDir} searchParams={{ q: initialQ, role: initialRole }} />
+                <SortableHeader column="isActive" label="Status" currentSort={sortBy} currentDir={sortDir} searchParams={{ q: initialQ, role: initialRole }} className="hidden sm:table-cell" />
+                <SortableHeader column="lastLoginAt" label="Last login" currentSort={sortBy} currentDir={sortDir} searchParams={{ q: initialQ, role: initialRole }} className="hidden lg:table-cell" />
+                <th className="!text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

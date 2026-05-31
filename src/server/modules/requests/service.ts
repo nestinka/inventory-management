@@ -50,10 +50,15 @@ export async function listRequests(input: ListRequestsInput, actor: Actor) {
     ...(input.to && { createdAt: { lte: new Date(input.to) } }),
   };
 
+  const orderBy = [
+    { [input.sortBy ?? 'createdAt']: input.sortDir ?? 'desc' } as Record<string, 'asc' | 'desc'>,
+    { id: 'asc' as const },
+  ];
+
   const requests = await prisma.request.findMany({
     where,
     include: requestInclude,
-    orderBy: { createdAt: 'desc' },
+    orderBy,
     take: input.limit + 1,
     ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
   });

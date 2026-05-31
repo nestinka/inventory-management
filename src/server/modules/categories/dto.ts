@@ -12,11 +12,16 @@ export const UpdateCategoryDto = z.object({
   status: z.nativeEnum(CategoryStatus).optional(),
 });
 
+export const CATEGORY_SORTABLE_COLUMNS = ['name', 'status', 'createdAt', 'updatedAt'] as const;
+export type CategorySortColumn = (typeof CATEGORY_SORTABLE_COLUMNS)[number];
+
 export const ListCategoriesDto = z.object({
   q: z.string().optional(),
   status: z.nativeEnum(CategoryStatus).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().optional(),
+  sortBy: z.enum(CATEGORY_SORTABLE_COLUMNS).optional(),
+  sortDir: z.enum(['asc', 'desc']).optional(),
 });
 
 export type CreateCategoryInput = z.infer<typeof CreateCategoryDto>;

@@ -12,7 +12,10 @@ export async function listAuditLogs(input: ListAuditLogsInput) {
       ...(input.to && { createdAt: { lte: new Date(input.to) } }),
     },
     include: { actor: { select: { id: true, name: true, email: true } } },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [
+      { [input.sortBy ?? 'createdAt']: input.sortDir ?? 'desc' } as Record<string, 'asc' | 'desc'>,
+      { id: 'asc' as const },
+    ],
     take: input.limit + 1,
     ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
   });

@@ -5,10 +5,30 @@ import { ArrowLeft } from 'lucide-react';
 import { inventorySnapshot } from '@/server/modules/reports';
 import { prisma } from '@/server/db/client';
 import { ReportDateFilter } from '@/components/reports/report-date-filter';
+import { SortableHeader } from '@/components/ui/sortable-header';
+import { resolveSort, resolveSortDir, sortRows, type SortGetter } from '@/lib/sort';
 import { formatDate } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Inventory Snapshot' };
 export const dynamic = 'force-dynamic';
+
+const INVENTORY_SORT_COLUMNS = ['name', 'category', 'currentStock', 'reorderThreshold', 'stockState', 'unitOfMeasure', 'expiryDate'] as const;
+type InventorySortColumn = (typeof INVENTORY_SORT_COLUMNS)[number];
+
+type InventoryRow = {
+  name: string; category: string; currentStock: number; reorderThreshold: number;
+  stockState: 'HEALTHY' | 'LOW' | 'OUT'; unitOfMeasure: string; expiryDate: Date | string | null;
+};
+
+const inventoryGetters: Record<InventorySortColumn, SortGetter<InventoryRow>> = {
+  name: (r) => r.name,
+  category: (r) => r.category,
+  currentStock: (r) => r.currentStock,
+  reorderThreshold: (r) => r.reorderThreshold,
+  stockState: (r) => r.stockState,
+  unitOfMeasure: (r) => r.unitOfMeasure,
+  expiryDate: (r) => (r.expiryDate ? new Date(r.expiryDate) : null),
+};
 
 const STOCK_STATE_STYLES = {
   HEALTHY: 'bg-emerald-100 text-emerald-800',
@@ -23,7 +43,7 @@ export default async function InventoryReportPage({
 }) {
   const sp = await searchParams;
 
-  const [data, categories] = await Promise.all([
+  const [raw, categories] = await Promise.all([
     inventorySnapshot({
       q:          sp.q          || undefined,
       categoryId: sp.categoryId || undefined,
@@ -38,6 +58,10 @@ export default async function InventoryReportPage({
       orderBy: { name: 'asc' },
     }),
   ]);
+
+  const sortBy = resolveSort(sp.sortBy, INVENTORY_SORT_COLUMNS, 'name');
+  const sortDir = resolveSortDir(sp.sortDir, 'asc');
+  const data = sortRows(raw, inventoryGetters[sortBy], sortDir);
 
   return (
     <div className="space-y-4">
@@ -90,14 +114,14 @@ export default async function InventoryReportPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50 text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Category</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Stock</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden md:table-cell">Threshold</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">State</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Unit</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Expiry</th>
+              <tr className="border-b border-border bg-muted/50 text-left [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="name" label="Name" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="category" label="Category" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="currentStock" label="Stock" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="reorderThreshold" label="Threshold" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden md:table-cell !text-right" />
+                <SortableHeader column="stockState" label="State" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="unitOfMeasure" label="Unit" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden lg:table-cell" />
+                <SortableHeader column="expiryDate" label="Expiry" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden lg:table-cell" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

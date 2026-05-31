@@ -30,10 +30,17 @@ export async function findMany(input: ListItemsInput) {
     ...(nearExpiryDate && { expiryDate: { lte: nearExpiryDate, gte: now } }),
   };
 
+  // Stable order: primary sort + id tiebreaker, so cursor pagination is deterministic
+  // even when the primary column has duplicates (e.g. expiryDate null on many rows).
+  const orderBy = [
+    { [input.sortBy ?? 'name']: input.sortDir ?? 'asc' } as Record<string, 'asc' | 'desc'>,
+    { id: 'asc' as const },
+  ];
+
   const items = await prisma.item.findMany({
     where,
     include: itemInclude,
-    orderBy: { name: 'asc' },
+    orderBy,
     take: input.limit + 1,
     ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
   });

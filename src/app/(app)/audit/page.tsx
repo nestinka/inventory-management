@@ -29,6 +29,8 @@ export default async function AuditPage({
     to: sp.to || undefined,
     limit: sp.limit ? Number(sp.limit) : 50,
     cursor: sp.cursor || undefined,
+    sortBy: sp.sortBy || undefined,
+    sortDir: sp.sortDir || undefined,
   });
 
   const { data: logs, nextCursor } = await listAuditLogs(input);
@@ -64,7 +66,7 @@ export default async function AuditPage({
         <AuditFilters />
       </Suspense>
 
-      <AuditTable logs={logs} />
+      <AuditTable logs={logs} sortBy={input.sortBy ?? 'createdAt'} sortDir={input.sortDir ?? 'desc'} searchParams={sp} />
 
       {nextCursor && (
         <div className="flex justify-center pt-2">

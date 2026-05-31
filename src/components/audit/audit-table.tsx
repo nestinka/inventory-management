@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Prisma } from '@prisma/client';
 import { formatDateTime } from '@/lib/utils';
 import { AuditDiffModal } from './audit-diff-modal';
+import { SortableHeader, type SortDir } from '@/components/ui/sortable-header';
 
 const ACTION_DESCRIPTIONS: Record<string, string> = {
   'item.create':           'Item created',
@@ -46,9 +47,12 @@ interface AuditLogWithActor {
 
 interface AuditTableProps {
   logs: AuditLogWithActor[];
+  sortBy: string;
+  sortDir: SortDir;
+  searchParams: Record<string, string | string[] | undefined>;
 }
 
-export function AuditTable({ logs }: AuditTableProps) {
+export function AuditTable({ logs, sortBy, sortDir, searchParams }: AuditTableProps) {
   const [selectedLog, setSelectedLog] = useState<AuditLogWithActor | null>(null);
 
   function handleRowClick(log: AuditLogWithActor) {
@@ -63,12 +67,12 @@ export function AuditTable({ logs }: AuditTableProps) {
         <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Time</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actor</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Action</th>
-                <th className="hidden px-4 py-3 text-left font-medium text-muted-foreground md:table-cell">Description</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground w-8" aria-label="Diff" />
+              <tr className="border-b border-border bg-muted/50 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="createdAt" label="Time" currentSort={sortBy} currentDir={sortDir} searchParams={searchParams} />
+                <th>Actor</th>
+                <SortableHeader column="action" label="Action" currentSort={sortBy} currentDir={sortDir} searchParams={searchParams} />
+                <SortableHeader column="targetType" label="Description" currentSort={sortBy} currentDir={sortDir} searchParams={searchParams} className="hidden md:table-cell" />
+                <th className="w-8" aria-label="Diff" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

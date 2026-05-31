@@ -4,10 +4,36 @@ import Link from 'next/link';
 import { ArrowLeft, FileText, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { requestSummaryReport } from '@/server/modules/reports';
 import { ReportDateFilter } from '@/components/reports/report-date-filter';
+import { SortableHeader } from '@/components/ui/sortable-header';
+import { resolveSort, resolveSortDir, sortRows, type SortGetter } from '@/lib/sort';
 import { formatDate, formatDateTime } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Request Summary Report' };
 export const dynamic = 'force-dynamic';
+
+const REQUEST_SUMMARY_SORT_COLUMNS = [
+  'createdAt', 'requester', 'status', 'lineCount', 'totalRequestedQty',
+  'totalApprovedQty', 'totalFulfilledQty', 'approver', 'approvedAt',
+] as const;
+type RequestSummarySortColumn = (typeof REQUEST_SUMMARY_SORT_COLUMNS)[number];
+
+type RequestSummaryRow = {
+  id: string; createdAt: Date | string; requester: string; status: string; reason: string;
+  lineCount: number; totalRequestedQty: number; totalApprovedQty: number; totalFulfilledQty: number;
+  approver: string | null; approvedAt: Date | string | null;
+};
+
+const requestSummaryGetters: Record<RequestSummarySortColumn, SortGetter<RequestSummaryRow>> = {
+  createdAt: (r) => new Date(r.createdAt),
+  requester: (r) => r.requester,
+  status: (r) => r.status,
+  lineCount: (r) => r.lineCount,
+  totalRequestedQty: (r) => r.totalRequestedQty,
+  totalApprovedQty: (r) => r.totalApprovedQty,
+  totalFulfilledQty: (r) => r.totalFulfilledQty,
+  approver: (r) => r.approver,
+  approvedAt: (r) => (r.approvedAt ? new Date(r.approvedAt) : null),
+};
 
 const STATUS_BADGE: Record<string, string> = {
   PENDING:   'bg-amber-100  text-amber-800',
@@ -26,13 +52,17 @@ export default async function RequestSummaryPage({
 }) {
   const sp = await searchParams;
 
-  const { rows, summary } = await requestSummaryReport({
+  const { rows: rawRows, summary } = await requestSummaryReport({
     from:   sp.from   || undefined,
     to:     sp.to     || undefined,
     status: sp.status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'FULFILLED' | 'CANCELLED' | undefined,
     q:      sp.q      || undefined,
     format: 'json',
   });
+
+  const sortBy = resolveSort(sp.sortBy, REQUEST_SUMMARY_SORT_COLUMNS, 'createdAt');
+  const sortDir = resolveSortDir(sp.sortDir, 'desc');
+  const rows = sortRows(rawRows, requestSummaryGetters[sortBy], sortDir);
 
   const fulfilmentPct =
     summary.totalApprovedQty > 0
@@ -174,17 +204,17 @@ export default async function RequestSummaryPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50 text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">Date</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Requester</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Reason</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden sm:table-cell">Lines</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Requested</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden md:table-cell">Approved</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden md:table-cell">Fulfilled</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell">Approver</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell">Approved On</th>
+              <tr className="border-b border-border bg-muted/50 text-left [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="createdAt" label="Date" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="requester" label="Requester" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="status" label="Status" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <th className="hidden lg:table-cell">Reason</th>
+                <SortableHeader column="lineCount" label="Lines" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden sm:table-cell !text-right" />
+                <SortableHeader column="totalRequestedQty" label="Requested" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="totalApprovedQty" label="Approved" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden md:table-cell !text-right" />
+                <SortableHeader column="totalFulfilledQty" label="Fulfilled" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden md:table-cell !text-right" />
+                <SortableHeader column="approver" label="Approver" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden xl:table-cell" />
+                <SortableHeader column="approvedAt" label="Approved On" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden xl:table-cell" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

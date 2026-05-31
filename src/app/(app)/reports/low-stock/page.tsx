@@ -2,18 +2,37 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { lowStockReport } from '@/server/modules/reports';
+import { SortableHeader } from '@/components/ui/sortable-header';
+import { resolveSort, resolveSortDir, sortRows, type SortGetter } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'Low Stock Report' };
 export const dynamic = 'force-dynamic';
+
+const LOW_STOCK_SORT_COLUMNS = ['name', 'category', 'currentStock', 'reorderThreshold', 'shortfall', 'stockState'] as const;
+type LowStockSortColumn = (typeof LOW_STOCK_SORT_COLUMNS)[number];
+
+type LowStockRow = { name: string; category: string; currentStock: number; reorderThreshold: number; stockState: string };
+
+const lowStockGetters: Record<LowStockSortColumn, SortGetter<LowStockRow>> = {
+  name: (r) => r.name,
+  category: (r) => r.category,
+  currentStock: (r) => r.currentStock,
+  reorderThreshold: (r) => r.reorderThreshold,
+  shortfall: (r) => r.reorderThreshold - r.currentStock,
+  stockState: (r) => r.stockState,
+};
 
 export default async function LowStockReportPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string>>;
 }) {
-  // Low-stock reflects current state; no date filter applicable.
-  await searchParams; // consumed to satisfy Next.js dynamic page contract
-  const data = await lowStockReport();
+  const sp = await searchParams;
+  const raw = await lowStockReport();
+
+  const sortBy = resolveSort(sp.sortBy, LOW_STOCK_SORT_COLUMNS, 'shortfall');
+  const sortDir = resolveSortDir(sp.sortDir, 'desc');
+  const data = sortRows(raw, lowStockGetters[sortBy], sortDir);
 
   const outOfStock = data.filter((r) => r.stockState === 'OUT');
   const belowThreshold = data.filter((r) => r.stockState === 'LOW');
@@ -52,13 +71,13 @@ export default async function LowStockReportPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50 text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Category</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Stock</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Threshold</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Shortfall</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">State</th>
+              <tr className="border-b border-border bg-muted/50 text-left [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="name" label="Name" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="category" label="Category" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="currentStock" label="Stock" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="reorderThreshold" label="Threshold" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="shortfall" label="Shortfall" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="stockState" label="State" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

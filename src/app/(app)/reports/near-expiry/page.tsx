@@ -4,11 +4,25 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { nearExpiryReport } from '@/server/modules/reports';
 import { ReportDateFilter } from '@/components/reports/report-date-filter';
+import { SortableHeader } from '@/components/ui/sortable-header';
+import { resolveSort, resolveSortDir, sortRows, type SortGetter } from '@/lib/sort';
 import { formatDate } from '@/lib/utils';
 import { env } from '@/env';
 
 export const metadata: Metadata = { title: 'Near Expiry Report' };
 export const dynamic = 'force-dynamic';
+
+const NEAR_EXPIRY_SORT_COLUMNS = ['name', 'category', 'currentStock', 'expiryDate'] as const;
+type NearExpirySortColumn = (typeof NEAR_EXPIRY_SORT_COLUMNS)[number];
+
+type NearExpiryRow = { name: string; category: string; currentStock: number; expiryDate: Date };
+
+const nearExpiryGetters: Record<NearExpirySortColumn, SortGetter<NearExpiryRow>> = {
+  name: (r) => r.name,
+  category: (r) => r.category,
+  currentStock: (r) => r.currentStock,
+  expiryDate: (r) => new Date(r.expiryDate),
+};
 
 function daysUntil(date: Date): number {
   return Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
@@ -27,12 +41,16 @@ export default async function NearExpiryReportPage({
 }) {
   const sp = await searchParams;
 
-  const data = await nearExpiryReport({
+  const raw = await nearExpiryReport({
     days: sp.days ? Number(sp.days) : env.NEAR_EXPIRY_WINDOW_DAYS,
     from: sp.from || undefined,
     to:   sp.to   || undefined,
     format: 'json',
   });
+
+  const sortBy = resolveSort(sp.sortBy, NEAR_EXPIRY_SORT_COLUMNS, 'expiryDate');
+  const sortDir = resolveSortDir(sp.sortDir, 'asc');
+  const data = sortRows(raw, nearExpiryGetters[sortBy], sortDir);
 
   return (
     <div className="space-y-4">
@@ -71,12 +89,12 @@ export default async function NearExpiryReportPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50 text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Category</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Stock</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Expiry Date</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Days Left</th>
+              <tr className="border-b border-border bg-muted/50 text-left [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="name" label="Name" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="category" label="Category" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="currentStock" label="Stock" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="expiryDate" label="Expiry Date" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <th>Days Left</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

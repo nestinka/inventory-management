@@ -27,10 +27,17 @@ export async function findMany(input: ListUsersInput) {
     ...(input.isActive !== undefined && { isActive: input.isActive }),
   };
 
+  // Postgres sorts NULLs last for asc and first for desc by default; that's the
+  // intuitive behaviour for lastLoginAt (never-logged-in users sink to the end).
+  const orderBy = [
+    { [input.sortBy ?? 'name']: input.sortDir ?? 'asc' } as Record<string, 'asc' | 'desc'>,
+    { id: 'asc' as const },
+  ];
+
   const users = await prisma.user.findMany({
     where,
     select: USER_SELECT,
-    orderBy: { name: 'asc' },
+    orderBy,
     take: input.limit + 1,
     ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
   });

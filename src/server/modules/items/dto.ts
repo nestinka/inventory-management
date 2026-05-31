@@ -25,6 +25,11 @@ export const UpdateItemDto = z.object({
   status: z.nativeEnum(ItemStatus).optional(),
 });
 
+export const ITEM_SORTABLE_COLUMNS = [
+  'name', 'currentStock', 'reorderThreshold', 'expiryDate', 'status', 'createdAt', 'updatedAt',
+] as const;
+export type ItemSortColumn = (typeof ITEM_SORTABLE_COLUMNS)[number];
+
 export const ListItemsDto = z.object({
   q: z.string().optional(),
   categoryId: z.string().uuid().optional(),
@@ -33,7 +38,8 @@ export const ListItemsDto = z.object({
   nearExpiryDays: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().optional(),
-  sort: z.string().optional(),
+  sortBy: z.enum(ITEM_SORTABLE_COLUMNS).optional(),
+  sortDir: z.enum(['asc', 'desc']).optional(),
 });
 
 export type CreateItemInput = z.infer<typeof CreateItemDto>;

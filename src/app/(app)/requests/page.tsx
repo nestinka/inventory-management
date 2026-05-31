@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { auth } from '@/lib/auth';
-import { listRequests } from '@/server/modules/requests';
+import { listRequests, REQUEST_SORTABLE_COLUMNS } from '@/server/modules/requests';
 import type { Actor } from '@/server/auth/rbac';
 import { RequestFilters } from '@/components/requests/request-filters';
+import { SortableHeader, type SortDir } from '@/components/ui/sortable-header';
 import { formatDateTime } from '@/lib/utils';
 import { RequestStatus } from '@prisma/client';
 
@@ -22,18 +23,23 @@ const statusStyles: Record<string, string> = {
 export default async function RequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; sortBy?: string; sortDir?: string }>;
 }) {
   const session = await auth();
   const actor = session?.user as Actor | undefined;
   if (!actor) return null;
 
-  const { status } = await searchParams;
-  const statusFilter = Object.values(RequestStatus).includes(status as RequestStatus)
-    ? (status as RequestStatus)
+  const sp = await searchParams;
+  const statusFilter = Object.values(RequestStatus).includes(sp.status as RequestStatus)
+    ? (sp.status as RequestStatus)
     : undefined;
 
-  const { data: requests } = await listRequests({ limit: 50, status: statusFilter }, actor);
+  const sortBy = (REQUEST_SORTABLE_COLUMNS as readonly string[]).includes(sp.sortBy ?? '')
+    ? (sp.sortBy as (typeof REQUEST_SORTABLE_COLUMNS)[number])
+    : 'createdAt';
+  const sortDir: SortDir = sp.sortDir === 'asc' ? 'asc' : 'desc';
+
+  const { data: requests } = await listRequests({ limit: 50, status: statusFilter, sortBy, sortDir }, actor);
 
   return (
     <div className="space-y-4">
@@ -60,12 +66,12 @@ export default async function RequestsPage({
         <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">ID</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Requester</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Lines</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Created</th>
+              <tr className="border-b border-border bg-muted/50 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground">
+                <th>ID</th>
+                <th>Requester</th>
+                <SortableHeader column="status" label="Status" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <th className="hidden md:table-cell">Lines</th>
+                <SortableHeader column="createdAt" label="Created" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

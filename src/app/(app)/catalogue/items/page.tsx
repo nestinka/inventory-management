@@ -4,10 +4,11 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { Pencil, SlidersHorizontal } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { listItems } from '@/server/modules/items';
+import { listItems, ITEM_SORTABLE_COLUMNS } from '@/server/modules/items';
 import { listCategories } from '@/server/modules/categories';
 import { StockBadge } from '@/components/ui/stock-badge';
 import { Pagination } from '@/components/ui/pagination';
+import { SortableHeader, type SortDir } from '@/components/ui/sortable-header';
 import { DeleteItemButton } from '@/components/catalogue/delete-item-button';
 import { InventoryFilters } from '@/components/inventory/inventory-filters';
 import { formatDate } from '@/lib/utils';
@@ -23,6 +24,8 @@ interface SearchParams {
   categoryId?: string;
   status?: string;
   stockState?: string;
+  sortBy?: string;
+  sortDir?: string;
   /** Cursor for the current page. Absent = first page. */
   cursor?: string;
   /**
@@ -43,6 +46,8 @@ function filterBase(sp: SearchParams) {
   if (sp.categoryId) p.set('categoryId', sp.categoryId);
   if (sp.status)     p.set('status',     sp.status);
   if (sp.stockState) p.set('stockState', sp.stockState);
+  if (sp.sortBy)     p.set('sortBy',     sp.sortBy);
+  if (sp.sortDir)    p.set('sortDir',    sp.sortDir);
   return p;
 }
 
@@ -80,6 +85,11 @@ export default async function CatalogueItemsPage({
 
   const sp = await searchParams;
 
+  const sortBy = (ITEM_SORTABLE_COLUMNS as readonly string[]).includes(sp.sortBy ?? '')
+    ? (sp.sortBy as (typeof ITEM_SORTABLE_COLUMNS)[number])
+    : 'name';
+  const sortDir: SortDir = sp.sortDir === 'desc' ? 'desc' : 'asc';
+
   const [{ data: items, nextCursor }, { data: categories }] = await Promise.all([
     listItems({
       q:          sp.q          || undefined,
@@ -88,6 +98,8 @@ export default async function CatalogueItemsPage({
       stockState: sp.stockState as never  || undefined,
       cursor:     sp.cursor     || undefined,
       limit:      PAGE_SIZE,
+      sortBy,
+      sortDir,
     }),
     listCategories({ limit: 100 }),
   ]);
@@ -135,13 +147,13 @@ export default async function CatalogueItemsPage({
         <div className="overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden sm:table-cell">Category</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Stock</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden lg:table-cell">Expiry</th>
-                <th className="px-4 py-3 text-left font-medium text-muted-foreground hidden md:table-cell">Status</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Actions</th>
+              <tr className="border-b border-border bg-muted/50 [&_th]:px-4 [&_th]:py-3 [&_th]:text-left [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="name" label="Name" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <th className="hidden sm:table-cell">Category</th>
+                <SortableHeader column="currentStock" label="Stock" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="expiryDate" label="Expiry" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden lg:table-cell" />
+                <SortableHeader column="status" label="Status" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
+                <th className="!text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

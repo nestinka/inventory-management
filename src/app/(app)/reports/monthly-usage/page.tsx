@@ -5,9 +5,28 @@ import { ArrowLeft, Flame, BarChart2, CalendarDays, Layers } from 'lucide-react'
 import { monthlyUsageReport } from '@/server/modules/reports';
 import { prisma } from '@/server/db/client';
 import { ReportDateFilter } from '@/components/reports/report-date-filter';
+import { SortableHeader } from '@/components/ui/sortable-header';
+import { resolveSort, resolveSortDir, sortRows, type SortGetter } from '@/lib/sort';
 
 export const metadata: Metadata = { title: 'Monthly Usage Report' };
 export const dynamic = 'force-dynamic';
+
+const MONTHLY_SORT_COLUMNS = ['month', 'itemName', 'category', 'unitsConsumed', 'transactions', 'avgPerTransaction'] as const;
+type MonthlySortColumn = (typeof MONTHLY_SORT_COLUMNS)[number];
+
+type MonthlyRow = {
+  month: string; itemId: string; itemName: string; category: string;
+  unitsConsumed: number; transactions: number; avgPerTransaction: number;
+};
+
+const monthlyGetters: Record<MonthlySortColumn, SortGetter<MonthlyRow>> = {
+  month: (r) => r.month,
+  itemName: (r) => r.itemName,
+  category: (r) => r.category,
+  unitsConsumed: (r) => r.unitsConsumed,
+  transactions: (r) => r.transactions,
+  avgPerTransaction: (r) => r.avgPerTransaction,
+};
 
 /** "2024-03"  →  "Mar 2024" */
 function fmtMonth(ym: string) {
@@ -25,7 +44,7 @@ export default async function MonthlyUsagePage({
 }) {
   const sp = await searchParams;
 
-  const [{ rows, summary }, categories] = await Promise.all([
+  const [{ rows: rawRows, summary }, categories] = await Promise.all([
     monthlyUsageReport({
       from:       sp.from       || undefined,
       to:         sp.to         || undefined,
@@ -39,6 +58,10 @@ export default async function MonthlyUsagePage({
       orderBy: { name: 'asc' },
     }),
   ]);
+
+  const sortBy = resolveSort(sp.sortBy, MONTHLY_SORT_COLUMNS, 'month');
+  const sortDir = resolveSortDir(sp.sortDir, 'desc');
+  const rows = sortRows(rawRows, monthlyGetters[sortBy], sortDir);
 
   // Unique months in ascending order for the "months covered" display
   const months = Array.from(new Set(rows.map((r) => r.month))).sort();
@@ -179,13 +202,13 @@ export default async function MonthlyUsagePage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50 text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">Month</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Item</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Category</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Units Consumed</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden sm:table-cell">Transactions</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden lg:table-cell">Avg / Transaction</th>
+              <tr className="border-b border-border bg-muted/50 text-left [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="month" label="Month" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="itemName" label="Item" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="category" label="Category" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
+                <SortableHeader column="unitsConsumed" label="Units Consumed" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="transactions" label="Transactions" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden sm:table-cell !text-right" />
+                <SortableHeader column="avgPerTransaction" label="Avg / Transaction" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden lg:table-cell !text-right" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

@@ -20,12 +20,19 @@ export const UpdateUserDto = z.object({
   isActive: z.boolean().optional(),
 });
 
+export const USER_SORTABLE_COLUMNS = [
+  'name', 'email', 'role', 'isActive', 'lastLoginAt', 'createdAt',
+] as const;
+export type UserSortColumn = (typeof USER_SORTABLE_COLUMNS)[number];
+
 export const ListUsersDto = z.object({
   q: z.string().optional(),
   role: userRoleEnum.optional(),
   isActive: z.coerce.boolean().optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().optional(),
+  sortBy: z.enum(USER_SORTABLE_COLUMNS).optional(),
+  sortDir: z.enum(['asc', 'desc']).optional(),
 });
 
 export type CreateUserInput = z.infer<typeof CreateUserDto>;

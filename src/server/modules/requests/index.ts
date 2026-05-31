@@ -4,9 +4,9 @@ export {
 } from './service';
 export {
   CreateRequestDto, ApproveRequestDto, RejectRequestDto,
-  FulfilRequestDto, ListRequestsDto,
+  FulfilRequestDto, ListRequestsDto, REQUEST_SORTABLE_COLUMNS,
 } from './dto';
 export type {
   CreateRequestInput, ApproveRequestInput, RejectRequestInput,
-  FulfilRequestInput, ListRequestsInput,
+  FulfilRequestInput, ListRequestsInput, RequestSortColumn,
 } from './dto';

@@ -4,10 +4,29 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { consumptionDetail } from '@/server/modules/reports';
 import { ReportDateFilter } from '@/components/reports/report-date-filter';
+import { SortableHeader } from '@/components/ui/sortable-header';
+import { resolveSort, resolveSortDir, sortRows, type SortGetter } from '@/lib/sort';
 import { formatDateTime } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Consumption Trends' };
 export const dynamic = 'force-dynamic';
+
+const CONSUMPTION_SORT_COLUMNS = ['date', 'itemName', 'actor', 'reason', 'delta', 'balanceAfter'] as const;
+type ConsumptionSortColumn = (typeof CONSUMPTION_SORT_COLUMNS)[number];
+
+type ConsumptionRow = {
+  id: string; date: Date | string; itemName: string; actor: string; reason: string;
+  delta: number; balanceAfter: number; note?: string | null;
+};
+
+const consumptionGetters: Record<ConsumptionSortColumn, SortGetter<ConsumptionRow>> = {
+  date: (r) => new Date(r.date),
+  itemName: (r) => r.itemName,
+  actor: (r) => r.actor,
+  reason: (r) => r.reason,
+  delta: (r) => r.delta,
+  balanceAfter: (r) => r.balanceAfter,
+};
 
 const REASON_STYLES: Record<string, string> = {
   CONSUMPTION:      'bg-blue-100   text-blue-800',
@@ -26,12 +45,16 @@ export default async function ConsumptionPage({
 }) {
   const sp = await searchParams;
 
-  const data = await consumptionDetail({
+  const raw = await consumptionDetail({
     from:   sp.from   || undefined,
     to:     sp.to     || undefined,
     itemId: sp.itemId || undefined,
     format: 'json',
   });
+
+  const sortBy = resolveSort(sp.sortBy, CONSUMPTION_SORT_COLUMNS, 'date');
+  const sortDir = resolveSortDir(sp.sortDir, 'desc');
+  const data = sortRows(raw, consumptionGetters[sortBy], sortDir);
 
   const totalConsumed = data.reduce(
     (sum, r) => sum + (r.delta < 0 ? Math.abs(r.delta) : 0),
@@ -64,14 +87,14 @@ export default async function ConsumptionPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50 text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">Date</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Item</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Actor</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Reason</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Qty</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden sm:table-cell">Balance</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Note</th>
+              <tr className="border-b border-border bg-muted/50 text-left [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="date" label="Date" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="itemName" label="Item" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="actor" label="Actor" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
+                <SortableHeader column="reason" label="Reason" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="delta" label="Qty" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="balanceAfter" label="Balance" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden sm:table-cell !text-right" />
+                <th className="hidden lg:table-cell">Note</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

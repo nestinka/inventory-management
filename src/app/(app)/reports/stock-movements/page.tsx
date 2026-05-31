@@ -5,10 +5,32 @@ import { ArrowLeft, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { stockMovementReport } from '@/server/modules/reports';
 import { prisma } from '@/server/db/client';
 import { ReportDateFilter } from '@/components/reports/report-date-filter';
+import { SortableHeader } from '@/components/ui/sortable-header';
+import { resolveSort, resolveSortDir, sortRows, type SortGetter } from '@/lib/sort';
 import { formatDateTime } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Stock Movement Report' };
 export const dynamic = 'force-dynamic';
+
+const MOVEMENT_SORT_COLUMNS = ['date', 'itemName', 'category', 'actor', 'reason', 'qty', 'balanceAfter'] as const;
+type MovementSortColumn = (typeof MOVEMENT_SORT_COLUMNS)[number];
+
+type MovementRow = {
+  id: string; date: Date | string; itemName: string; category: string;
+  actor: string; reason: string; qty: number; balanceAfter: number;
+  direction: 'IN' | 'OUT'; note?: string | null;
+};
+
+const movementGetters: Record<MovementSortColumn, SortGetter<MovementRow>> = {
+  date: (r) => new Date(r.date),
+  itemName: (r) => r.itemName,
+  category: (r) => r.category,
+  actor: (r) => r.actor,
+  reason: (r) => r.reason,
+  // Signed quantity so "Qty desc" surfaces the biggest additions first, "asc" surfaces biggest removals.
+  qty: (r) => (r.direction === 'IN' ? 1 : -1) * r.qty,
+  balanceAfter: (r) => r.balanceAfter,
+};
 
 const REASON_BADGE: Record<string, string> = {
   RECEIVED:         'bg-emerald-100 text-emerald-800',
@@ -29,7 +51,7 @@ export default async function StockMovementsPage({
 
   const direction = (sp.direction as 'ALL' | 'IN' | 'OUT') || 'ALL';
 
-  const [{ rows, summary }, categories] = await Promise.all([
+  const [{ rows: rawRows, summary }, categories] = await Promise.all([
     stockMovementReport({
       from:       sp.from       || undefined,
       to:         sp.to         || undefined,
@@ -45,6 +67,10 @@ export default async function StockMovementsPage({
       orderBy: { name: 'asc' },
     }),
   ]);
+
+  const sortBy = resolveSort(sp.sortBy, MOVEMENT_SORT_COLUMNS, 'date');
+  const sortDir = resolveSortDir(sp.sortDir, 'desc');
+  const rows = sortRows(rawRows, movementGetters[sortBy], sortDir);
 
   const netPositive = summary.netMovement >= 0;
 
@@ -150,15 +176,15 @@ export default async function StockMovementsPage({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/50 text-left">
-                <th className="px-4 py-3 font-medium text-muted-foreground">Date / Time</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Item</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Category</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Actor</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground">Reason</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Qty</th>
-                <th className="px-4 py-3 text-right font-medium text-muted-foreground hidden sm:table-cell">Balance</th>
-                <th className="px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Note</th>
+              <tr className="border-b border-border bg-muted/50 text-left [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_th]:text-muted-foreground">
+                <SortableHeader column="date" label="Date / Time" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="itemName" label="Item" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="category" label="Category" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
+                <SortableHeader column="actor" label="Actor" currentSort={sortBy} currentDir={sortDir} searchParams={sp} className="hidden md:table-cell" />
+                <SortableHeader column="reason" label="Reason" currentSort={sortBy} currentDir={sortDir} searchParams={sp} />
+                <SortableHeader column="qty" label="Qty" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="!text-right" />
+                <SortableHeader column="balanceAfter" label="Balance" currentSort={sortBy} currentDir={sortDir} searchParams={sp} align="right" className="hidden sm:table-cell !text-right" />
+                <th className="hidden lg:table-cell">Note</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
