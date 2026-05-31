@@ -25,10 +25,15 @@ Quickstart:
 cp .env.example .env
 docker compose up -d postgres mailhog
 pnpm install
-pnpm prisma migrate dev
-pnpm prisma db seed
+pnpm db:migrate          # applies the single 20260518174608_init baseline
+pnpm db:seed             # prod-min: admin user + 4 categories (idempotent)
+pnpm db:seed:dev         # dev-only: adds editor/viewer + demo items + sample request
 pnpm dev
 ```
+
+`pnpm db:seed:dev` refuses to run when `NODE_ENV=production`. On a fresh
+laptop the three commands above reach a working signed-in dashboard in
+under a minute.
 
 ## 3. Production stack (single host)
 
@@ -95,6 +100,26 @@ RATE_LIMIT_API_PER_MIN=60
 - `prisma migrate deploy` runs as a one-shot job at release time, before app containers are rolled.
 - Backwards-compatible migrations only on prod (expand → backfill → contract pattern). Breaking column drops require a two-release cycle.
 - Long-running migrations (index creation) use `CONCURRENTLY` where possible (Postgres 16).
+
+### Baseline migration (post-v1.0 consolidation)
+
+The pre-v1.0 history of nine incremental migrations was squashed into a
+single baseline (`prisma/migrations/20260518174608_init/`) regenerated
+from `schema.prisma` via `prisma migrate diff`. This is the new starting
+point for every fresh environment.
+
+- **Fresh environment (no DB):** `pnpm db:deploy` applies the baseline,
+  `pnpm db:seed` boots the admin user and categories. Done.
+- **Existing environment already past the old history:** run
+  `pnpm exec prisma migrate resolve --applied 20260518174608_init` to
+  re-point the `_prisma_migrations` table at the new baseline, then
+  delete the stale rows that reference the removed migrations. The
+  schema itself is unchanged, so no DDL runs.
+- **Seed split:** `prisma/seed.ts` is prod-safe (admin + categories,
+  overridable via `SEED_ADMIN_EMAIL`/`SEED_ADMIN_NAME`/`SEED_ADMIN_PASSWORD`);
+  `prisma/seed.dev.ts` is the dev demo data (editor/viewer users, 16
+  items, sample adjustments, sample request) and refuses to run in
+  production.
 
 ## 8. Observability
 
