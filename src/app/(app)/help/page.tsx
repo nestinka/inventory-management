@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import {
   BookOpen, Users as UsersIcon, Package, FileText, Layers, Bell, BarChart3,
   ClipboardList, Settings as SettingsIcon, UserCircle, AlertCircle, LifeBuoy,
+  ArrowUpDown,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import type { Actor } from '@/server/auth/rbac';
@@ -15,6 +16,7 @@ type Role = 'ADMIN' | 'EDITOR' | 'VIEWER';
 
 const SECTIONS: { id: string; title: string; icon: typeof BookOpen }[] = [
   { id: 'overview',       title: 'Overview',                icon: BookOpen },
+  { id: 'sorting',        title: 'Sorting & filtering',     icon: ArrowUpDown },
   { id: 'roles',          title: 'Roles & permissions',     icon: UsersIcon },
   { id: 'inventory',      title: 'Inventory & stock',       icon: Package },
   { id: 'requests',       title: 'Requests & approvals',    icon: FileText },
@@ -78,6 +80,23 @@ export default async function HelpPage() {
             to drill into specific tasks. The interface is responsive — the same workflows work
             from a phone at the store-room shelf and from a desk.
           </p>
+        </Section>
+
+        <Section id="sorting" title="Sorting & filtering">
+          <p>
+            Every list page &mdash; Inventory, Items, Categories, Requests, Users, the Audit
+            log, and all Reports &mdash; lets you sort by clicking a column header. An
+            up-arrow (<span aria-hidden="true">↑</span>) means ascending, a down-arrow
+            (<span aria-hidden="true">↓</span>) descending; the unsorted two-headed icon
+            (<span aria-hidden="true">⇅</span>) shows which other columns are sortable.
+            Click again to flip direction.
+          </p>
+          <ul className="list-disc space-y-1 pl-5 text-sm">
+            <li><strong>Filters and sort travel together.</strong> Sort is held in the URL (<code className="rounded bg-muted px-1 py-0.5">?sortBy=…&amp;sortDir=…</code>), so a sorted, filtered view can be bookmarked or pasted into chat to share.</li>
+            <li><strong>Changing sort resets pagination.</strong> On pages like Items and Users that page through long lists, clicking a header takes you back to the first page of the new ordering &mdash; cursor state is dropped.</li>
+            <li><strong>Empty values sink to the bottom.</strong> When sorting by columns like Expiry date or Last login, rows with no value stay at the end regardless of direction.</li>
+            <li><strong>Reports keep their summary cards.</strong> Sorting a report only reorders the detail table; KPI cards and chips above it still summarise the full filtered set.</li>
+          </ul>
         </Section>
 
         <Section id="roles" title="Roles & permissions">
